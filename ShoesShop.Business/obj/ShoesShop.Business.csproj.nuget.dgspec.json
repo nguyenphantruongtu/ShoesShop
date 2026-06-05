@@ -1,23 +1,23 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\Gigabyte G5\\Documents\\Ki 9 - FPTU\\PRN232\\FinalProject_ShoesShop\\ShoesShop_Project\\ShoesShop.Business\\ShoesShop.Business.csproj": {}
+    "C:\\Users\\ACER\\Source\\Repos\\ShoesShop\\ShoesShop.Business\\ShoesShop.Business.csproj": {}
   },
   "projects": {
-    "C:\\Users\\Gigabyte G5\\Documents\\Ki 9 - FPTU\\PRN232\\FinalProject_ShoesShop\\ShoesShop_Project\\ShoesShop.Business\\ShoesShop.Business.csproj": {
+    "C:\\Users\\ACER\\Source\\Repos\\ShoesShop\\ShoesShop.Business\\ShoesShop.Business.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\Gigabyte G5\\Documents\\Ki 9 - FPTU\\PRN232\\FinalProject_ShoesShop\\ShoesShop_Project\\ShoesShop.Business\\ShoesShop.Business.csproj",
+        "projectUniqueName": "C:\\Users\\ACER\\Source\\Repos\\ShoesShop\\ShoesShop.Business\\ShoesShop.Business.csproj",
         "projectName": "ShoesShop.Business",
-        "projectPath": "C:\\Users\\Gigabyte G5\\Documents\\Ki 9 - FPTU\\PRN232\\FinalProject_ShoesShop\\ShoesShop_Project\\ShoesShop.Business\\ShoesShop.Business.csproj",
-        "packagesPath": "C:\\Users\\Gigabyte G5\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\Gigabyte G5\\Documents\\Ki 9 - FPTU\\PRN232\\FinalProject_ShoesShop\\ShoesShop_Project\\ShoesShop.Business\\obj\\",
+        "projectPath": "C:\\Users\\ACER\\Source\\Repos\\ShoesShop\\ShoesShop.Business\\ShoesShop.Business.csproj",
+        "packagesPath": "C:\\Users\\ACER\\.nuget\\packages\\",
+        "outputPath": "C:\\Users\\ACER\\Source\\Repos\\ShoesShop\\ShoesShop.Business\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
         ],
         "configFilePaths": [
-          "C:\\Users\\Gigabyte G5\\AppData\\Roaming\\NuGet\\NuGet.Config",
+          "C:\\Users\\ACER\\AppData\\Roaming\\NuGet\\NuGet.Config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
         ],
@@ -32,8 +32,11 @@
           "net8.0": {
             "targetAlias": "net8.0",
             "projectReferences": {
-              "C:\\Users\\Gigabyte G5\\Documents\\Ki 9 - FPTU\\PRN232\\FinalProject_ShoesShop\\ShoesShop_Project\\ShoesShop.Data\\ShoesShop.Data.csproj": {
-                "projectPath": "C:\\Users\\Gigabyte G5\\Documents\\Ki 9 - FPTU\\PRN232\\FinalProject_ShoesShop\\ShoesShop_Project\\ShoesShop.Data\\ShoesShop.Data.csproj"
+              "C:\\Users\\ACER\\Source\\Repos\\ShoesShop\\ShoesShop.Data\\ShoesShop.Data.csproj": {
+                "projectPath": "C:\\Users\\ACER\\Source\\Repos\\ShoesShop\\ShoesShop.Data\\ShoesShop.Data.csproj"
+              },
+              "C:\\Users\\ACER\\Source\\Repos\\ShoesShop\\ShoesShop.Shared\\ShoesShop.Shared.csproj": {
+                "projectPath": "C:\\Users\\ACER\\Source\\Repos\\ShoesShop\\ShoesShop.Shared\\ShoesShop.Shared.csproj"
               }
             }
           }
@@ -48,11 +51,17 @@
           "auditLevel": "low",
           "auditMode": "direct"
         },
-        "SdkAnalysisLevel": "9.0.300"
+        "SdkAnalysisLevel": "9.0.200"
       },
       "frameworks": {
         "net8.0": {
           "targetAlias": "net8.0",
+          "dependencies": {
+            "AutoMapper": {
+              "target": "Package",
+              "version": "[16.1.1, )"
+            }
+          },
           "imports": [
             "net461",
             "net462",
@@ -69,24 +78,24 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.310/PortableRuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.203/PortableRuntimeIdentifierGraph.json"
         }
       }
     },
-    "C:\\Users\\Gigabyte G5\\Documents\\Ki 9 - FPTU\\PRN232\\FinalProject_ShoesShop\\ShoesShop_Project\\ShoesShop.Data\\ShoesShop.Data.csproj": {
+    "C:\\Users\\ACER\\Source\\Repos\\ShoesShop\\ShoesShop.Data\\ShoesShop.Data.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\Gigabyte G5\\Documents\\Ki 9 - FPTU\\PRN232\\FinalProject_ShoesShop\\ShoesShop_Project\\ShoesShop.Data\\ShoesShop.Data.csproj",
+        "projectUniqueName": "C:\\Users\\ACER\\Source\\Repos\\ShoesShop\\ShoesShop.Data\\ShoesShop.Data.csproj",
         "projectName": "ShoesShop.Data",
-        "projectPath": "C:\\Users\\Gigabyte G5\\Documents\\Ki 9 - FPTU\\PRN232\\FinalProject_ShoesShop\\ShoesShop_Project\\ShoesShop.Data\\ShoesShop.Data.csproj",
-        "packagesPath": "C:\\Users\\Gigabyte G5\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\Gigabyte G5\\Documents\\Ki 9 - FPTU\\PRN232\\FinalProject_ShoesShop\\ShoesShop_Project\\ShoesShop.Data\\obj\\",
+        "projectPath": "C:\\Users\\ACER\\Source\\Repos\\ShoesShop\\ShoesShop.Data\\ShoesShop.Data.csproj",
+        "packagesPath": "C:\\Users\\ACER\\.nuget\\packages\\",
+        "outputPath": "C:\\Users\\ACER\\Source\\Repos\\ShoesShop\\ShoesShop.Data\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
         ],
         "configFilePaths": [
-          "C:\\Users\\Gigabyte G5\\AppData\\Roaming\\NuGet\\NuGet.Config",
+          "C:\\Users\\ACER\\AppData\\Roaming\\NuGet\\NuGet.Config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
         ],
@@ -100,7 +109,11 @@
         "frameworks": {
           "net8.0": {
             "targetAlias": "net8.0",
-            "projectReferences": {}
+            "projectReferences": {
+              "C:\\Users\\ACER\\Source\\Repos\\ShoesShop\\ShoesShop.Shared\\ShoesShop.Shared.csproj": {
+                "projectPath": "C:\\Users\\ACER\\Source\\Repos\\ShoesShop\\ShoesShop.Shared\\ShoesShop.Shared.csproj"
+              }
+            }
           }
         },
         "warningProperties": {
@@ -113,7 +126,7 @@
           "auditLevel": "low",
           "auditMode": "direct"
         },
-        "SdkAnalysisLevel": "9.0.300"
+        "SdkAnalysisLevel": "9.0.200"
       },
       "frameworks": {
         "net8.0": {
@@ -156,7 +169,72 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.310/PortableRuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.203/PortableRuntimeIdentifierGraph.json"
+        }
+      }
+    },
+    "C:\\Users\\ACER\\Source\\Repos\\ShoesShop\\ShoesShop.Shared\\ShoesShop.Shared.csproj": {
+      "version": "1.0.0",
+      "restore": {
+        "projectUniqueName": "C:\\Users\\ACER\\Source\\Repos\\ShoesShop\\ShoesShop.Shared\\ShoesShop.Shared.csproj",
+        "projectName": "ShoesShop.Shared",
+        "projectPath": "C:\\Users\\ACER\\Source\\Repos\\ShoesShop\\ShoesShop.Shared\\ShoesShop.Shared.csproj",
+        "packagesPath": "C:\\Users\\ACER\\.nuget\\packages\\",
+        "outputPath": "C:\\Users\\ACER\\Source\\Repos\\ShoesShop\\ShoesShop.Shared\\obj\\",
+        "projectStyle": "PackageReference",
+        "fallbackFolders": [
+          "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
+        ],
+        "configFilePaths": [
+          "C:\\Users\\ACER\\AppData\\Roaming\\NuGet\\NuGet.Config",
+          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
+          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
+        ],
+        "originalTargetFrameworks": [
+          "net8.0"
+        ],
+        "sources": {
+          "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
+          "https://api.nuget.org/v3/index.json": {}
+        },
+        "frameworks": {
+          "net8.0": {
+            "targetAlias": "net8.0",
+            "projectReferences": {}
+          }
+        },
+        "warningProperties": {
+          "warnAsError": [
+            "NU1605"
+          ]
+        },
+        "restoreAuditProperties": {
+          "enableAudit": "true",
+          "auditLevel": "low",
+          "auditMode": "direct"
+        },
+        "SdkAnalysisLevel": "9.0.200"
+      },
+      "frameworks": {
+        "net8.0": {
+          "targetAlias": "net8.0",
+          "imports": [
+            "net461",
+            "net462",
+            "net47",
+            "net471",
+            "net472",
+            "net48",
+            "net481"
+          ],
+          "assetTargetFallback": true,
+          "warn": true,
+          "frameworkReferences": {
+            "Microsoft.NETCore.App": {
+              "privateAssets": "all"
+            }
+          },
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.203/PortableRuntimeIdentifierGraph.json"
         }
       }
     }

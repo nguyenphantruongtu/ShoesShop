@@ -13,3 +13,21 @@ C:\Users\Gigabyte G5\Documents\Ki 9 - FPTU\PRN232\FinalProject_ShoesShop\ShoesSh
 C:\Users\Gigabyte G5\Documents\Ki 9 - FPTU\PRN232\FinalProject_ShoesShop\ShoesShop_Project\ShoesShop.Business\bin\Debug\net8.0\ShoesShop.Data.pdb
 C:\Users\Gigabyte G5\Documents\Ki 9 - FPTU\PRN232\FinalProject_ShoesShop\ShoesShop_Project\ShoesShop.Business\obj\Debug\net8.0\ShoesShop.Business.csproj.AssemblyReference.cache
 C:\Users\Gigabyte G5\Documents\Ki 9 - FPTU\PRN232\FinalProject_ShoesShop\ShoesShop_Project\ShoesShop.Business\obj\Debug\net8.0\ShoesSho.1D847AA1.Up2Date
+C:\Users\ACER\Source\Repos\ShoesShop\ShoesShop.Business\obj\Debug\net8.0\ShoesShop.Business.csproj.AssemblyReference.cache
+C:\Users\ACER\Source\Repos\ShoesShop\ShoesShop.Business\obj\Debug\net8.0\ShoesShop.Business.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\ACER\Source\Repos\ShoesShop\ShoesShop.Business\obj\Debug\net8.0\ShoesShop.Business.AssemblyInfoInputs.cache
+C:\Users\ACER\Source\Repos\ShoesShop\ShoesShop.Business\obj\Debug\net8.0\ShoesShop.Business.AssemblyInfo.cs
+C:\Users\ACER\Source\Repos\ShoesShop\ShoesShop.Business\obj\Debug\net8.0\ShoesShop.Business.csproj.CoreCompileInputs.cache
+C:\Users\ACER\Source\Repos\ShoesShop\ShoesShop.Business\obj\Debug\net8.0\ShoesShop.Business.sourcelink.json
+C:\Users\ACER\Source\Repos\ShoesShop\ShoesShop.Business\obj\Debug\net8.0\ShoesShop.Business.dll
+C:\Users\ACER\Source\Repos\ShoesShop\ShoesShop.Business\obj\Debug\net8.0\refint\ShoesShop.Business.dll
+C:\Users\ACER\Source\Repos\ShoesShop\ShoesShop.Business\obj\Debug\net8.0\ShoesShop.Business.pdb
+C:\Users\ACER\Source\Repos\ShoesShop\ShoesShop.Business\bin\Debug\net8.0\ShoesShop.Business.deps.json
+C:\Users\ACER\Source\Repos\ShoesShop\ShoesShop.Business\bin\Debug\net8.0\ShoesShop.Business.dll
+C:\Users\ACER\Source\Repos\ShoesShop\ShoesShop.Business\bin\Debug\net8.0\ShoesShop.Business.pdb
+C:\Users\ACER\Source\Repos\ShoesShop\ShoesShop.Business\bin\Debug\net8.0\ShoesShop.Data.dll
+C:\Users\ACER\Source\Repos\ShoesShop\ShoesShop.Business\bin\Debug\net8.0\ShoesShop.Shared.dll
+C:\Users\ACER\Source\Repos\ShoesShop\ShoesShop.Business\bin\Debug\net8.0\ShoesShop.Data.pdb
+C:\Users\ACER\Source\Repos\ShoesShop\ShoesShop.Business\bin\Debug\net8.0\ShoesShop.Shared.pdb
+C:\Users\ACER\Source\Repos\ShoesShop\ShoesShop.Business\obj\Debug\net8.0\ShoesSho.1D847AA1.Up2Date
+C:\Users\ACER\Source\Repos\ShoesShop\ShoesShop.Business\obj\Debug\net8.0\ref\ShoesShop.Business.dll
