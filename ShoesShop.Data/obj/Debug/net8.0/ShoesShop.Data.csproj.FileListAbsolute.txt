@@ -12,3 +12,4 @@ C:\Users\Gigabyte G5\Documents\Ki 9 - FPTU\PRN232\FinalProject_ShoesShop\ShoesSh
 C:\Users\Gigabyte G5\Documents\Ki 9 - FPTU\PRN232\FinalProject_ShoesShop\ShoesShop_Project\ShoesShop.Data\obj\Debug\net8.0\ShoesShop.Data.pdb
 C:\Users\Gigabyte G5\Documents\Ki 9 - FPTU\PRN232\FinalProject_ShoesShop\ShoesShop_Project\ShoesShop.Data\obj\Debug\net8.0\ShoesShop.Data.genruntimeconfig.cache
 C:\Users\Gigabyte G5\Documents\Ki 9 - FPTU\PRN232\FinalProject_ShoesShop\ShoesShop_Project\ShoesShop.Data\obj\Debug\net8.0\ref\ShoesShop.Data.dll
+C:\Users\Gigabyte G5\Documents\Ki 9 - FPTU\PRN232\FinalProject_ShoesShop\ShoesShop_Project\ShoesShop.Data\obj\Debug\net8.0\ShoesShop.Data.sourcelink.json

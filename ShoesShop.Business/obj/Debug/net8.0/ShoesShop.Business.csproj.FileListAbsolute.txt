@@ -13,3 +13,4 @@ C:\Users\Gigabyte G5\Documents\Ki 9 - FPTU\PRN232\FinalProject_ShoesShop\ShoesSh
 C:\Users\Gigabyte G5\Documents\Ki 9 - FPTU\PRN232\FinalProject_ShoesShop\ShoesShop_Project\ShoesShop.Business\bin\Debug\net8.0\ShoesShop.Data.pdb
 C:\Users\Gigabyte G5\Documents\Ki 9 - FPTU\PRN232\FinalProject_ShoesShop\ShoesShop_Project\ShoesShop.Business\obj\Debug\net8.0\ShoesShop.Business.csproj.AssemblyReference.cache
 C:\Users\Gigabyte G5\Documents\Ki 9 - FPTU\PRN232\FinalProject_ShoesShop\ShoesShop_Project\ShoesShop.Business\obj\Debug\net8.0\ShoesSho.1D847AA1.Up2Date
+C:\Users\Gigabyte G5\Documents\Ki 9 - FPTU\PRN232\FinalProject_ShoesShop\ShoesShop_Project\ShoesShop.Business\obj\Debug\net8.0\ShoesShop.Business.sourcelink.json

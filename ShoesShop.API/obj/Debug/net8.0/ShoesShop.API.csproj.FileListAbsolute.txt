@@ -138,3 +138,9 @@ C:\Users\Gigabyte G5\Documents\Ki 9 - FPTU\PRN232\FinalProject_ShoesShop\ShoesSh
 C:\Users\Gigabyte G5\Documents\Ki 9 - FPTU\PRN232\FinalProject_ShoesShop\ShoesShop_Project\ShoesShop.API\bin\Debug\net8.0\runtimes\win\lib\net6.0\System.Windows.Extensions.dll
 C:\Users\Gigabyte G5\Documents\Ki 9 - FPTU\PRN232\FinalProject_ShoesShop\ShoesShop_Project\ShoesShop.API\bin\Debug\net8.0\ShoesShop.Data.dll
 C:\Users\Gigabyte G5\Documents\Ki 9 - FPTU\PRN232\FinalProject_ShoesShop\ShoesShop_Project\ShoesShop.API\bin\Debug\net8.0\ShoesShop.Data.pdb
+C:\Users\Gigabyte G5\Documents\Ki 9 - FPTU\PRN232\FinalProject_ShoesShop\ShoesShop_Project\ShoesShop.API\bin\Debug\net8.0\Microsoft.AspNetCore.Authentication.JwtBearer.dll
+C:\Users\Gigabyte G5\Documents\Ki 9 - FPTU\PRN232\FinalProject_ShoesShop\ShoesShop_Project\ShoesShop.API\obj\Debug\net8.0\ShoesShop.API.sourcelink.json
+C:\Users\Gigabyte G5\Documents\Ki 9 - FPTU\PRN232\FinalProject_ShoesShop\ShoesShop_Project\ShoesShop.API\bin\Debug\net8.0\BCrypt.Net-Next.dll
+C:\Users\Gigabyte G5\Documents\Ki 9 - FPTU\PRN232\FinalProject_ShoesShop\ShoesShop_Project\ShoesShop.API\bin\Debug\net8.0\ShoesShop.Business.dll
+C:\Users\Gigabyte G5\Documents\Ki 9 - FPTU\PRN232\FinalProject_ShoesShop\ShoesShop_Project\ShoesShop.API\bin\Debug\net8.0\ShoesShop.Business.pdb
+C:\Users\Gigabyte G5\Documents\Ki 9 - FPTU\PRN232\FinalProject_ShoesShop\ShoesShop_Project\ShoesShop.API\obj\Debug\net8.0\staticwebassets.upToDateCheck.txt

@@ -25,9 +25,9 @@ C:\Users\Gigabyte G5\Documents\Ki 9 - FPTU\PRN232\FinalProject_ShoesShop\ShoesSh
 C:\Users\Gigabyte G5\Documents\Ki 9 - FPTU\PRN232\FinalProject_ShoesShop\ShoesShop_Project\ShoesShop.Web\obj\Debug\net8.0\staticwebassets.build.json.cache
 C:\Users\Gigabyte G5\Documents\Ki 9 - FPTU\PRN232\FinalProject_ShoesShop\ShoesShop_Project\ShoesShop.Web\obj\Debug\net8.0\staticwebassets.development.json
 C:\Users\Gigabyte G5\Documents\Ki 9 - FPTU\PRN232\FinalProject_ShoesShop\ShoesShop_Project\ShoesShop.Web\obj\Debug\net8.0\staticwebassets.build.endpoints.json
-C:\Users\Gigabyte G5\Documents\Ki 9 - FPTU\PRN232\FinalProject_ShoesShop\ShoesShop_Project\ShoesShop.Web\obj\Debug\net8.0\staticwebassets.upToDateCheck.txt
 C:\Users\Gigabyte G5\Documents\Ki 9 - FPTU\PRN232\FinalProject_ShoesShop\ShoesShop_Project\ShoesShop.Web\obj\Debug\net8.0\ShoesShop.Web.dll
 C:\Users\Gigabyte G5\Documents\Ki 9 - FPTU\PRN232\FinalProject_ShoesShop\ShoesShop_Project\ShoesShop.Web\obj\Debug\net8.0\refint\ShoesShop.Web.dll
 C:\Users\Gigabyte G5\Documents\Ki 9 - FPTU\PRN232\FinalProject_ShoesShop\ShoesShop_Project\ShoesShop.Web\obj\Debug\net8.0\ShoesShop.Web.pdb
 C:\Users\Gigabyte G5\Documents\Ki 9 - FPTU\PRN232\FinalProject_ShoesShop\ShoesShop_Project\ShoesShop.Web\obj\Debug\net8.0\ShoesShop.Web.genruntimeconfig.cache
 C:\Users\Gigabyte G5\Documents\Ki 9 - FPTU\PRN232\FinalProject_ShoesShop\ShoesShop_Project\ShoesShop.Web\obj\Debug\net8.0\ref\ShoesShop.Web.dll
+C:\Users\Gigabyte G5\Documents\Ki 9 - FPTU\PRN232\FinalProject_ShoesShop\ShoesShop_Project\ShoesShop.Web\obj\Debug\net8.0\ShoesShop.Web.sourcelink.json
