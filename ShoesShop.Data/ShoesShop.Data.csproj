@@ -24,4 +24,8 @@
     <Folder Include="SeedData\" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\ShoesShop.Shared\ShoesShop.Shared.csproj" />
+  </ItemGroup>
+
 </Project>

@@ -1,32 +1,47 @@
-using Microsoft.AspNetCore.Mvc;
-using ShoesShop.Web.Models;
-using System.Diagnostics;
+﻿using Microsoft.AspNetCore.Mvc;
+using System.Text.Json;
+using ShoesShop.Shared.DTOs; 
 
-namespace ShoesShop.Web.Controllers
+namespace ShoesShop.Web.Controllers;
+
+public class HomeController : Controller
 {
-    public class HomeController : Controller
+    private readonly IHttpClientFactory _httpClientFactory;
+
+    public HomeController(IHttpClientFactory httpClientFactory)
     {
-        private readonly ILogger<HomeController> _logger;
+        _httpClientFactory = httpClientFactory;
+    }
 
-        public HomeController(ILogger<HomeController> logger)
+    public async Task<IActionResult> Index()
+    {
+        // 1. Tạo một HttpClient để gửi request
+        var client = _httpClientFactory.CreateClient();
+
+        try
         {
-            _logger = logger;
+            // 2. Gọi chính xác cổng port HTTPS của API mà bạn đã test trên Swagger (7214)
+            var response = await client.GetAsync("https://localhost:7214/api/products/featured");
+
+            if (response.IsSuccessStatusCode)
+            {
+                // 3. Đọc chuỗi JSON trả về từ API
+                var jsonString = await response.Content.ReadAsStringAsync();
+
+                // 4. Giải mã (Deserialize) chuỗi JSON đó thành Object C# dựa vào Khuôn mẫu ở tầng Shared
+                var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+                var result = JsonSerializer.Deserialize<ApiResponse<IEnumerable<ProductDto>>>(jsonString, options);
+
+                // 5. Truyền danh sách sản phẩm (Data) ra ngoài View HTML
+                return View(result?.Data ?? new List<ProductDto>());
+            }
+        }
+        catch (Exception ex)
+        {
+            // Nếu API chưa bật hoặc lỗi, ghi log và trả về danh sách rỗng để giao diện không bị sập
+            ViewBag.ErrorMessage = "Không thể kết nối đến hệ thống Backend API.";
         }
 
-        public IActionResult Index()
-        {
-            return View();
-        }
-
-        public IActionResult Privacy()
-        {
-            return View();
-        }
-
-        [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
-        public IActionResult Error()
-        {
-            return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
-        }
+        return View(new List<ProductDto>());
     }
 }

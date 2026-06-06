@@ -8,6 +8,7 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="8.0.8" />
+    <PackageReference Include="Microsoft.AspNetCore.OData" Version="9.4.1" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="8.0.8">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
@@ -17,8 +18,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\ShoesShop.Data\ShoesShop.Data.csproj" />
     <ProjectReference Include="..\ShoesShop.Business\ShoesShop.Business.csproj" />
+    <ProjectReference Include="..\ShoesShop.Data\ShoesShop.Data.csproj" />
+    <ProjectReference Include="..\ShoesShop.Shared\ShoesShop.Shared.csproj" />
   </ItemGroup>
 
 </Project>
