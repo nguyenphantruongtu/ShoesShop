@@ -58,6 +58,12 @@
                                     </li>
                                     <li><hr class="dropdown-divider" /></li>
                                     <li>
+                                        <a class="dropdown-item" asp-controller="Profile" asp-action="Index">
+                                            <i class="bi bi-person-circle me-2"></i>Tài khoản của tôi
+                                        </a>
+                                    </li>
+                                    <li><hr class="dropdown-divider" /></li>
+                                    <li>
                                         <form asp-controller="Account" asp-action="Logout" method="post" id="logoutForm">
                                             @Html.AntiForgeryToken()
                                             <button type="submit" class="dropdown-item text-danger">

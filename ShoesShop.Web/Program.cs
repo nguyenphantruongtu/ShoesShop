@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Authentication.Cookies;
+using ShoesShop.Web.Services;
 
 namespace ShoesShop.Web
 {
@@ -10,6 +11,8 @@ namespace ShoesShop.Web
 
             builder.Services.AddControllersWithViews();
             builder.Services.AddHttpClient();
+            builder.Services.AddHttpContextAccessor();
+            builder.Services.AddScoped<ApiService>();
 
             builder.Services.AddSession(options =>
             {
