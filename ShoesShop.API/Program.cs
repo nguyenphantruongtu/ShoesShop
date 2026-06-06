@@ -34,6 +34,8 @@ builder.Services.AddDbContext<ShoeStoreDbContext>(options =>
 // 4. Đăng ký Dependency Injection (DI) cho các lớp Tầng Data & Business
 builder.Services.AddScoped<ProductRepository>();
 builder.Services.AddScoped<IProductService, ProductService>();
+builder.Services.AddScoped<IDashboardService, DashboardService>();
+builder.Services.AddScoped<IReportService, ReportService>();
 
 // 5. Đăng ký AutoMapper bằng biểu thức Lambda (Sửa lỗi gạch đỏ)
 builder.Services.AddAutoMapper(cfg =>

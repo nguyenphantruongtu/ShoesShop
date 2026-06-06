@@ -1,0 +1,58 @@
+﻿@model IEnumerable<ShoesShop.Shared.DTOs.TopProductDto>
+
+@{
+    ViewData["Title"] = "Top sản phẩm bán chạy";
+}
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+</head>
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-3">
+            @await Html.PartialAsync("_Sidebar")
+        </div>
+        <div class="col-md-9">
+            <div class="card p-3">
+                <h4 class="mb-3">Top sản phẩm bán chạy</h4>
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Sản phẩm</th>
+                            <th>Số lượng</th>
+                            <th>Doanh thu</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (Model != null && Model.Any())
+                        {
+                            var index = 1;
+                            foreach (var p in Model)
+                            {
+                                <tr>
+                                    <td>@index</td>
+                                    <td class="d-flex align-items-center">
+                                        <img src="@(p.ImageUrl ?? "/images/no-image.png")" style="width:56px;height:56px;object-fit:cover;border-radius:8px;margin-right:12px;" />
+                                        <div>
+                                            <div class="fw-bold">@p.ProductName</div>
+                                        </div>
+                                    </td>
+                                    <td>@p.TotalQuantity</td>
+                                    <td>@p.TotalRevenue.ToString("#,##0") đ</td>
+                                </tr>
+                                index++;
+                            }
+                        }
+                        else
+                        {
+                            <tr>
+                                <td colspan="4" class="text-center text-muted">Không có dữ liệu</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
