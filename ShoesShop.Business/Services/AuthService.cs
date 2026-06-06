@@ -1,5 +1,3 @@
-using ShoesShop.Business.Constants;
-using ShoesShop.Business.DTOs.Auth;
 using ShoesShop.Business.Interfaces;
 using ShoesShop.Data.Entities;
 using ShoesShop.Data.Repositories.Interfaces;

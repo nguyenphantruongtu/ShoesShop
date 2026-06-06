@@ -1,10 +1,7 @@
-﻿using AutoMapper;
-using AutoMapper.QueryableExtensions;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.OData.Query;
 using ShoesShop.Business.Interfaces;
-using ShoesShop.Data.Repositories;
-using ShoesShop.Shared.DTOs;
+using ShoesShop.Data.Repositories.Interfaces;
 
 namespace ShoesShop.API.Controllers;
 
@@ -13,10 +10,9 @@ namespace ShoesShop.API.Controllers;
 public class ProductsController : ControllerBase
 {
     private readonly IProductService _productService;
-    private readonly ProductRepository _productRepository;
-    private readonly IMapper _mapper;
+    private readonly IProductRepository _productRepository;
 
-    public ProductsController(IProductService productService, ProductRepository productRepository)
+    public ProductsController(IProductService productService, IProductRepository productRepository)
     {
         _productService = productService;
         _productRepository = productRepository;
@@ -30,20 +26,13 @@ public class ProductsController : ControllerBase
         return Ok(new ApiResponse<IEnumerable<ProductDto>> { Success = true, Data = result });
     }
 
-    // UC-02: Lấy danh sách toàn bộ sản phẩm hỗ trợ OData
+    // UC-02: Lấy danh sách toàn bộ sản phẩm hỗ trợ OData (filter/sort/paging qua query string)
     [HttpGet]
-    [EnableQuery(MaxTop = 100, AllowedQueryOptions = AllowedQueryOptions.All)] // Kích hoạt bộ lọc OData giải mã $filter, $orderby từ client gửi lên
-    public IActionResult Get()
+    [EnableQuery(MaxTop = 100, AllowedQueryOptions = AllowedQueryOptions.All)]
+    public async Task<IActionResult> Get()
     {
-        var entityQuery = _productRepository.GetQueryable().Where(p => p.IsActive);
-
-        // 2. Chuyển đổi cấu trúc sang DTO
-        var dtoQuery = entityQuery.ProjectTo<ProductDto>(
-        HttpContext.RequestServices.GetRequiredService<AutoMapper.IConfigurationProvider>()
-    );
-
-        // 3. Trả về đúng kiểu OkObjectResult
-        return Ok(dtoQuery);
+        var result = await _productService.GetListAsync(null, null, null, true, 1, 100);
+        return Ok(result.Products);
     }
 
     // UC-03: Tìm kiếm sản phẩm qua keyword

@@ -1,4 +1,3 @@
-using ShoesShop.Business.DTOs.User;
 using ShoesShop.Business.Interfaces;
 using ShoesShop.Data.Repositories.Interfaces;
 

@@ -1,7 +1,5 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using ShoesShop.API.Models;
-using ShoesShop.Business.DTOs.User;
 using ShoesShop.Business.Interfaces;
 using System.Security.Claims;
 

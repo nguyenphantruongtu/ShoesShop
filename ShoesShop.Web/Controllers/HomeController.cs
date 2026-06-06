@@ -1,6 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using System.Text.Json;
-using ShoesShop.Shared.DTOs; 
 
 namespace ShoesShop.Web.Controllers;
 

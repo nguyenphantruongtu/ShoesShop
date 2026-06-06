@@ -1,5 +1,3 @@
-using ShoesShop.Business.DTOs.Address;
-
 namespace ShoesShop.Business.Interfaces;
 
 public interface IAddressService

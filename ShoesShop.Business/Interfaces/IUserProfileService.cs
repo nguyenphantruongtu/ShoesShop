@@ -1,5 +1,3 @@
-using ShoesShop.Business.DTOs.User;
-
 namespace ShoesShop.Business.Interfaces;
 
 public interface IUserProfileService

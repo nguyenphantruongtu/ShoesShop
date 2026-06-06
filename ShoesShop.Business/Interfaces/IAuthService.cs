@@ -1,5 +1,3 @@
-using ShoesShop.Business.DTOs.Auth;
-
 namespace ShoesShop.Business.Interfaces;
 
 public interface IAuthService

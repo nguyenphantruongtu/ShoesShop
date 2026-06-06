@@ -29,7 +29,13 @@ public class Program
         builder.Services.AddScoped<IUserRepository, UserRepository>();
         builder.Services.AddScoped<IRoleRepository, RoleRepository>();
         builder.Services.AddScoped<IAddressRepository, AddressRepository>();
-        builder.Services.AddScoped<ProductRepository>();
+        // F3 – Catalog
+        builder.Services.AddScoped<IProductRepository, ProductRepository>();
+        builder.Services.AddScoped<ICategoryRepository, CategoryRepository>();
+        builder.Services.AddScoped<IBrandRepository, BrandRepository>();
+        builder.Services.AddScoped<ISizeRepository, SizeRepository>();
+        builder.Services.AddScoped<IColorRepository, ColorRepository>();
+        builder.Services.AddScoped<IProductVariantRepository, ProductVariantRepository>();
 
         // ── Business Services ────────────────────────────────────────────
         // F1 – Auth
@@ -41,8 +47,16 @@ public class Program
         builder.Services.AddScoped<IAddressService, AddressService>();
         builder.Services.AddScoped<IAdminUserService, AdminUserService>();
 
-        // Product (DuyPham)
+        // F3 – Catalog Services
         builder.Services.AddScoped<IProductService, ProductService>();
+        builder.Services.AddScoped<ICategoryService, CategoryService>();
+        builder.Services.AddScoped<IBrandService, BrandService>();
+        builder.Services.AddScoped<ISizeColorService, SizeColorService>();
+        builder.Services.AddScoped<IProductVariantService, ProductVariantService>();
+
+        // F10 – Order Management (Staff)
+        builder.Services.AddScoped<IOrderRepository, OrderRepository>();
+        builder.Services.AddScoped<IOrderService, OrderService>();
 
         // ── AutoMapper ───────────────────────────────────────────────────
         builder.Services.AddAutoMapper(cfg =>

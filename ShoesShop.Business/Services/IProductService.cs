@@ -1,11 +1,3 @@
-﻿using ShoesShop.Shared.DTOs;
-using ShoesShop.Data.Entities;
-
-namespace ShoesShop.Business.Interfaces;
-
-public interface IProductService
-{
-    Task<IEnumerable<ProductDto>> GetFeaturedProductsAsync();
-    Task<IEnumerable<ProductDto>> SearchProductsAsync(string keyword);
-    Task<ProductDto?> GetProductDetailAsync(int id);
-}
+// File này được giữ để tương thích — IProductService đã được định nghĩa trong
+// ShoesShop.Business/Interfaces/ICatalogService.cs
+// Không thêm code vào đây.

@@ -1,6 +1,5 @@
 ﻿using AutoMapper;
 using ShoesShop.Data.Entities;
-using ShoesShop.Shared.DTOs;
 
 namespace ShoesShop.Business;
 

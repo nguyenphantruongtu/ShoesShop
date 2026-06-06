@@ -1,9 +1,5 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using ShoesShop.API.Models;
-using ShoesShop.Business.Constants;
-using ShoesShop.Business.DTOs.Admin;
-using ShoesShop.Business.DTOs.User;
 using ShoesShop.Business.Interfaces;
 
 namespace ShoesShop.API.Controllers;
