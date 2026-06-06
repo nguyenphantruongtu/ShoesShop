@@ -26,9 +26,17 @@ public class Program
         builder.Services.AddScoped<IUserRepository, UserRepository>();
         builder.Services.AddScoped<IRoleRepository, RoleRepository>();
 
-        // Business Services
+        // Business Services — F1 Auth
         builder.Services.AddScoped<IJwtService, JwtService>();
         builder.Services.AddScoped<IAuthService, AuthService>();
+
+        // Business Services — F2 User Profile & Address
+        builder.Services.AddScoped<IUserProfileService, UserProfileService>();
+        builder.Services.AddScoped<IAddressService, AddressService>();
+        builder.Services.AddScoped<IAdminUserService, AdminUserService>();
+
+        // Repositories — F2
+        builder.Services.AddScoped<IAddressRepository, AddressRepository>();
 
         // JWT Authentication
         var jwtKey = builder.Configuration["JwtSettings:SecretKey"]!;

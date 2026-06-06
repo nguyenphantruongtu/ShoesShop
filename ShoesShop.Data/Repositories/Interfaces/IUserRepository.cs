@@ -14,5 +14,9 @@ namespace ShoesShop.Data.Repositories.Interfaces
         Task<bool> IsEmailExistsAsync(string email);
         Task AddUserAsync(User user);
         Task UpdateUserAsync(User user);
+
+        // Admin UC-38
+        Task<(List<User> Users, int TotalCount)> GetUsersPaginatedAsync(
+            string? search, int page, int pageSize);
     }
 }

@@ -53,7 +53,7 @@ public class AuthController : ControllerBase
     [Authorize]
     public IActionResult Logout()
     {
-        return Ok(ApiResponse<string>.Ok(null, "Đăng xuất thành công."));
+        return Ok(ApiResponse<string>.Ok(string.Empty, "Đăng xuất thành công."));
     }
 
     /// <summary>Lấy thông tin user đang đăng nhập</summary>
