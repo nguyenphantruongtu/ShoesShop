@@ -1,0 +1,32 @@
+@{
+    ViewData["Title"] = "Truy cập bị từ chối";
+    Layout = "_AuthLayout";
+}
+
+<div class="auth-page">
+    <div class="shape shape-1"></div>
+    <div class="shape shape-2"></div>
+
+    <div class="glass-container">
+        <div class="glass-card text-center">
+            <div class="brand-logo">
+                <i class="bi bi-shoe-2 me-2"></i>ShoesShop
+            </div>
+
+            <div style="font-size: 4rem; color: #ef4444; margin-bottom: 1rem;">
+                <i class="bi bi-shield-x"></i>
+            </div>
+
+            <h2 class="auth-title" style="color: #ef4444;">Truy cập bị từ chối</h2>
+            <p class="auth-subtitle mb-4">Bạn không có quyền truy cập vào trang này.</p>
+
+            <a asp-controller="Home" asp-action="Index" class="btn-auth" style="display: inline-block; text-decoration: none; padding: 12px 30px; width: auto;">
+                <i class="bi bi-house me-2"></i>Về trang chủ
+            </a>
+
+            <div class="auth-footer">
+                <a asp-controller="Account" asp-action="Login">Đăng nhập với tài khoản khác</a>
+            </div>
+        </div>
+    </div>
+</div>
