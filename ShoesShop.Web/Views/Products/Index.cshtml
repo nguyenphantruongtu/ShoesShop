@@ -109,7 +109,7 @@
                     // Bóc tách chính xác gói dữ liệu chuẩn OData v4
                     if (response && response.value !== undefined) {
                         products = response.value;
-                        totalCount = response["@@odata.count"] || products.length; // Sửa ký tự bọc @@ cho Razor view không hiểu nhầm
+                        totalCount = response["@@odata.count"] || products.length; 
                     } else if (Array.isArray(response)) {
                         products = response;
                         totalCount = response.length;

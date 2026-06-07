@@ -13,10 +13,14 @@ namespace ShoesShop.Web.Controllers
         }
 
         // UC-04: Trang chi tiết sản phẩm (Ví dụ: /products/5)
-        [HttpGet("{id}")]
+        [HttpGet("detail/{id}")]
         public IActionResult Detail(int id)
         {
-            // Tạm thời truyền Id qua ViewBag để ngoài View sử dụng
+            if (id <= 0)
+            {
+                return RedirectToAction("Index"); 
+            }
+
             ViewBag.ProductId = id;
             return View();
         }

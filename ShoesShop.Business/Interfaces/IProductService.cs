@@ -7,5 +7,5 @@ public interface IProductService
 {
     Task<IEnumerable<ProductDto>> GetFeaturedProductsAsync();
     Task<IEnumerable<ProductDto>> SearchProductsAsync(string keyword);
-    Task<ProductDto?> GetProductDetailAsync(int id);
+    Task<ProductDetailDto?> GetProductDetailAsync(int productId);
 }

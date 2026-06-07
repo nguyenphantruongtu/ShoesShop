@@ -1,12 +1,13 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using ShoesShop.Data.Entities;
-using ShoesShop.Data.Context; // Thay đổi tên namespace Context cho đúng với dự án của bạn
+using ShoesShop.Data.Context;
+using ShoesShop.Data.Interfaces;
 
 namespace ShoesShop.Data.Repositories;
 
-public class ProductRepository
+public class ProductRepository : IProductRepository
 {
-    private readonly ShoeStoreDbContext _context; // Đổi tên class DbContext của bạn nếu khác
+    private readonly ShoeStoreDbContext _context;
 
     public ProductRepository(ShoeStoreDbContext context)
     {

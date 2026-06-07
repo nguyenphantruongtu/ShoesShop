@@ -6,6 +6,7 @@ using ShoesShop.Business.Interfaces;
 using ShoesShop.Business.Services;
 using ShoesShop.Data.Context;
 using ShoesShop.Data.Entities;
+using ShoesShop.Data.Interfaces;
 using ShoesShop.Data.Repositories;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -32,9 +33,10 @@ builder.Services.AddDbContext<ShoeStoreDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 // 4. Đăng ký Dependency Injection (DI) cho các lớp Tầng Data & Business
-builder.Services.AddScoped<ProductRepository>();
+builder.Services.AddScoped<IProductRepository, ProductRepository>();
 builder.Services.AddScoped<IProductService, ProductService>();
-
+builder.Services.AddScoped<IOrderRepository, OrderRepository>();
+builder.Services.AddScoped<IOrderService, OrderService>();
 // 5. Đăng ký AutoMapper bằng biểu thức Lambda (Sửa lỗi gạch đỏ)
 builder.Services.AddAutoMapper(cfg =>
 {
