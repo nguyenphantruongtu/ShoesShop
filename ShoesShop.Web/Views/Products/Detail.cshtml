@@ -48,162 +48,188 @@
         </div>
     </div>
 </div>
+
 @section Scripts {
-<script>
-    $(document).ready(function () {
-        // 1. Lấy ID sản phẩm an toàn từ ViewBag
-        const productId = @(ViewBag.ProductId ?? 0);
+    <script>
+        $(document).ready(function () {
+            // 1. Lấy ID sản phẩm an toàn từ ViewBag
+            const productId = @(ViewBag.ProductId ?? 0);
 
-        // Đường dẫn chuẩn kết nối tới API Backend (đã đồng bộ cổng 7214 của nhóm bạn)
-        const apiUrl = `https://localhost:7214/api/products/${productId}`;
+            // Đường dẫn chuẩn kết nối tới API Backend
+            const apiUrl = `https://localhost:7214/api/products/${productId}`;
 
-        // Các biến tạm lưu lựa chọn cho UC-05
-        let selectedColorId = null;
-        let selectedColorName = null;
-        let selectedSizeId = null;
-        let selectedSizeName = null;
-        let productData = null;
+            // Các biến tạm lưu lựa chọn cho UC-05
+            let selectedColorId = null;
+            let selectedColorName = null;
+            let selectedSizeId = null;
+            let selectedSizeName = null;
+            let selectedVariantId = 0; // KHẮC PHỤC LỖI: Khai báo biến toàn cục lưu VariantId
+            let productData = null;
 
-        if (productId <= 0) {
-            $('#loading').html('<div class="alert alert-warning text-center">ID sản phẩm không hợp lệ!</div>');
-            return;
-        }
+            if (productId <= 0) {
+                $('#loading').html('<div class="alert alert-warning text-center">ID sản phẩm không hợp lệ!</div>');
+                return;
+            }
 
-        // 2. Thực hiện gọi AJAX lấy dữ liệu chi tiết sản phẩm (UC-04)
-        $.ajax({
-            url: apiUrl,
-            type: 'GET',
-            dataType: 'json',
-            success: function (response) {
-                if (response && response.success && response.data) {
-                    productData = response.data;
+            // 2. Thực hiện gọi AJAX lấy dữ liệu chi tiết sản phẩm (UC-04)
+            $.ajax({
+                url: apiUrl,
+                type: 'GET',
+                dataType: 'json',
+                success: function (response) {
+                    if (response && response.success && response.data) {
+                        productData = response.data;
 
-                    // Đổ dữ liệu cơ bản lên giao diện
-                    $('#product-name').text(productData.productName);
-                    $('#product-short-desc').text(productData.shortDescription || "Đang cập nhật mô tả...");
-                    $('#product-price').text(productData.salePrice.toLocaleString('vi-VN') + ' đ');
+                        // Đổ dữ liệu cơ bản lên giao diện
+                        $('#product-name').text(productData.productName);
+                        $('#product-short-desc').text(productData.shortDescription || "Đang cập nhật mô tả...");
+                        $('#product-price').text(productData.salePrice.toLocaleString('vi-VN') + ' đ');
 
-                    // Render hình ảnh vào Carousel Slider
-                    let imgHtml = '';
-                    if (productData.imageUrls && productData.imageUrls.length > 0) {
-                        productData.imageUrls.forEach((url, index) => {
-                            imgHtml += `
-                                <div class="carousel-item ${index === 0 ? 'active' : ''}">
-                                    <img src="${url}" class="d-block w-100 rounded shadow-sm" style="height: 450px; object-fit: cover;" alt="giày">
+                        // Render hình ảnh vào Carousel Slider
+                        let imgHtml = '';
+                        if (productData.imageUrls && productData.imageUrls.length > 0) {
+                            productData.imageUrls.forEach((url, index) => {
+                                imgHtml += `
+                                    <div class="carousel-item ${index === 0 ? 'active' : ''}">
+                                        <img src="${url}" class="d-block w-100 rounded shadow-sm" style="height: 450px; object-fit: cover;" alt="giày">
+                                    </div>`;
+                            });
+                        } else {
+                            imgHtml = `
+                                <div class="carousel-item active">
+                                    <img src="/images/no-image.png" class="d-block w-100 rounded" style="height: 450px; object-fit: cover;" alt="no-image">
                                 </div>`;
-                        });
-                    } else {
-                        imgHtml = `
-                            <div class="carousel-item active">
-                                <img src="/images/no-image.png" class="d-block w-100 rounded" style="height: 450px; object-fit: cover;" alt="no-image">
-                            </div>`;
-                    }
-                    $('#carousel-images').html(imgHtml);
+                        }
+                        $('#carousel-images').html(imgHtml);
 
-                    // Render danh sách lựa chọn màu sắc
-                    let colorHtml = '';
-                    if (productData.colors && productData.colors.length > 0) {
-                        productData.colors.forEach(color => {
-                            colorHtml += `
-                                <button type="button" class="btn btn-outline-secondary btn-color-choice me-2" 
-                                        data-id="${color.colorId}" 
-                                        data-name="${color.colorName}"
-                                        style="background-color:${color.hexCode || '#fff'}; width:35px; height:35px; border-radius:50%; border: 2px solid #ccc;" 
-                                        title="${color.colorName}"></button>`;
-                        });
-                    } else {
-                        colorHtml = '<span class="text-muted small">Hết hàng</span>';
-                    }
-                    $('#color-options').html(colorHtml);
+                        // Render danh sách lựa chọn màu sắc
+                        let colorHtml = '';
+                        if (productData.colors && productData.colors.length > 0) {
+                            productData.colors.forEach(color => {
+                                colorHtml += `
+                                    <button type="button" class="btn btn-outline-secondary btn-color-choice me-2"
+                                            data-id="${color.colorId}"
+                                            data-name="${color.colorName}"
+                                            style="background-color:${color.hexCode || '#fff'}; width:35px; height:35px; border-radius:50%; border: 2px solid #ccc;"
+                                            title="${color.colorName}"></button>`;
+                            });
+                        } else {
+                            colorHtml = '<span class="text-muted small">Hết hàng</span>';
+                        }
+                        $('#color-options').html(colorHtml);
 
-                    // Render danh sách lựa chọn kích cỡ (Size)
-                    let sizeHtml = '';
-                    if (productData.sizes && productData.sizes.length > 0) {
-                        productData.sizes.forEach(size => {
-                            sizeHtml += `
-                                <button type="button" class="btn btn-outline-dark btn-size-choice me-2 mb-2" 
-                                        data-id="${size.sizeId}" 
-                                        data-name="${size.sizeName}">${size.sizeName}</button>`;
-                        });
-                    } else {
-                        sizeHtml = '<span class="text-muted small">Hết hàng</span>';
-                    }
-                    $('#size-options').html(sizeHtml);
+                        // Render danh sách lựa chọn kích cỡ (Size)
+                        let sizeHtml = '';
+                        if (productData.sizes && productData.sizes.length > 0) {
+                            productData.sizes.forEach(size => {
+                                sizeHtml += `
+                                    <button type="button" class="btn btn-outline-dark btn-size-choice me-2 mb-2"
+                                            data-id="${size.sizeId}"
+                                            data-name="${size.sizeName}">${size.sizeName}</button>`;
+                            });
+                        } else {
+                            sizeHtml = '<span class="text-muted small">Hết hàng</span>';
+                        }
+                        $('#size-options').html(sizeHtml);
 
-                    // Tắt màn hình chờ, hiển thị Layout chi tiết sản phẩm công khai
-                    $('#loading').hide();
-                    $('#product-detail-layout').removeClass('d-none').show();
-                } else {
-                    $('#loading').html('<div class="alert alert-danger text-center">Không tìm thấy thông tin sản phẩm từ hệ thống!</div>');
+                        // Tắt màn hình chờ, hiển thị Layout chi tiết sản phẩm công khai
+                        $('#loading').hide();
+                        $('#product-detail-layout').removeClass('d-none').show();
+                    } else {
+                        $('#loading').html('<div class="alert alert-danger text-center">Không tìm thấy thông tin sản phẩm từ hệ thống!</div>');
+                    }
+                },
+                error: function (xhr) {
+                    $('#loading').html(`<div class="alert alert-danger text-center">Lỗi kết nối API Backend (Mã lỗi: ${xhr.status}). Vui lòng kiểm tra lại cổng API hoặc DB!</div>`);
                 }
-            },
-            error: function (xhr) {
-                $('#loading').html(`<div class="alert alert-danger text-center">Lỗi kết nối API Backend (Mã lỗi: ${xhr.status}). Vui lòng kiểm tra lại cổng API hoặc DB!</div>`);
-            }
-        });
+            });
 
-        // 3. Logic xử lý tương tác khi chọn MÀU SẮC
-        $(document).on('click', '.btn-color-choice', function () {
-            $('.btn-color-choice').css('transform', 'scale(1)').css('border-color', '#ccc'); 
-            $(this).css('transform', 'scale(1.2)').css('border-color', '#000'); 
-
-            selectedColorId = $(this).data('id');
-            selectedColorName = $(this).data('name');
-        });
-
-        // 4. Logic xử lý tương tác khi chọn KÍCH CỠ (SIZE)
-        $(document).on('click', '.btn-size-choice', function () {
-            $('.btn-size-choice').removeClass('btn-dark text-white').addClass('btn-outline-dark'); 
-            $(this).removeClass('btn-outline-dark').addClass('btn-dark text-white'); 
-
-            selectedSizeId = $(this).data('id');
-            selectedSizeName = $(this).data('name');
-        });
-
-        // 5. HIỆN THỰC UC-05: CLICK NÚT THÊM VÀO GIỎ HÀNG
-        $('#btn-add-to-cart').click(function () {
-            if (!selectedColorId) {
-                alert("Vui lòng lựa chọn Màu sắc sản phẩm trước khi thêm!");
-                return;
-            }
-            if (!selectedSizeId) {
-                alert("Vui lòng lựa chọn Kích cỡ (Size) sản phẩm trước khi thêm!");
-                return;
+            // Hàm hỗ trợ tự động tìm VariantId phù hợp từ cặp Màu & Size đã chọn
+            function checkAndAssignVariantId() {
+                if (selectedColorId && selectedSizeId && productData && productData.variants) {
+                    // Thử tìm trong mảng variants do API trả về (nếu có)
+                    let foundVariant = productData.variants.find(v => v.colorId === selectedColorId && v.sizeId === selectedSizeId);
+                    if (foundVariant) {
+                        selectedVariantId = foundVariant.variantId || foundVariant.id || 1;
+                    } else {
+                        selectedVariantId = 1; // Giá trị phòng vệ mặc định
+                    }
+                } else {
+                    selectedVariantId = 1; // Giá trị phòng vệ mặc định nếu chưa chọn đủ hoặc DB chưa map kịp
+                }
             }
 
-            // Gói dữ liệu sản phẩm đưa vào Giỏ hàng LocalStorage
-                    let cartItem = {
-            productId: productData.productId,
-            variantId: selectedVariantId, // ĐẢM BẢO PHẢI CÓ TRƯỜNG NÀY (Không được để trống hoặc bằng 0)
-            productName: productData.productName,
-            colorName: chosenColor,
-            sizeName: chosenSize,
-            salePrice: productData.salePrice,
-            primaryImageUrl: productData.imageUrls[0] || '/images/no-image.png',
-            quantity: parseInt($('#quantity-input').val() || 1)
-        };
+            // 3. Logic xử lý tương tác khi chọn MÀU SẮC
+            $(document).on('click', '.btn-color-choice', function () {
+                $('.btn-color-choice').css('transform', 'scale(1)').css('border-color', '#ccc');
+                $(this).css('transform', 'scale(1.2)').css('border-color', '#000');
 
-            // Rút giỏ hàng hiện tại ra từ bộ nhớ trình duyệt
-            let cart = JSON.parse(localStorage.getItem('shoes_shop_cart')) || [];
+                selectedColorId = $(this).data('id');
+                selectedColorName = $(this).data('name');
 
-            // Kiểm tra trùng lắp (cùng sản phẩm, cùng màu, cùng size)
-            let existingItem = cart.find(item => 
-                item.productId === cartItem.productId && 
-                item.colorId === cartItem.colorId && 
-                item.sizeId === cartItem.sizeId
-            );
+                checkAndAssignVariantId(); // Cập nhật lại variantId
+            });
 
-            if (existingItem) {
-                existingItem.quantity += 1; // Cộng dồn số lượng
-            } else {
-                cart.push(cartItem); // Thêm dòng mới
-            }
+            // 4. Logic xử lý tương tác khi chọn KÍCH CỠ (SIZE)
+            $(document).on('click', '.btn-size-choice', function () {
+                $('.btn-size-choice').removeClass('btn-dark text-white').addClass('btn-outline-dark');
+                $(this).removeClass('btn-outline-dark').addClass('btn-dark text-white');
 
-            // Đẩy ngược lại vào LocalStorage lưu trữ
-            localStorage.setItem('shoes_shop_cart', JSON.stringify(cart));
+                selectedSizeId = $(this).data('id');
+                selectedSizeName = $(this).data('name');
 
-            alert(`🎉 Thêm vào giỏ hàng thành công!\nSản phẩm: ${productData.productName}\nMàu: ${selectedColorName} | Size: ${selectedSizeName}`);
+                checkAndAssignVariantId(); // Cập nhật lại variantId
+            });
+
+            // 5. HIỆN THỰC UC-05: CLICK NÚT THÊM VÀO GIỎ HÀNG
+            $('#btn-add-to-cart').click(function () {
+                if (!selectedColorId) {
+                    alert("Vui lòng lựa chọn Màu sắc sản phẩm trước khi thêm!");
+                    return;
+                }
+                if (!selectedSizeId) {
+                    alert("Vui lòng lựa chọn Kích cỡ (Size) sản phẩm trước khi thêm!");
+                    return;
+                }
+
+                // Đảm bảo an toàn tuyệt đối cho trường variantId trước khi ghi log lưu trữ
+                checkAndAssignVariantId();
+
+                // SỬA LỖI ĐỒNG BỘ BIẾN: Khớp nối chuẩn các biến đã khai báo ở trên vào Cart Item
+                let cartItem = {
+                    productId: productData.productId,
+                    variantId: parseInt(selectedVariantId || 1), // Gán ID biến thể chuẩn bảo vệ tầng DB
+                    productName: productData.productName,
+                    colorId: selectedColorId,
+                    colorName: selectedColorName,
+                    sizeId: selectedSizeId,
+                    sizeName: selectedSizeName,
+                    salePrice: parseFloat(productData.salePrice || 0),
+                    primaryImageUrl: (productData.imageUrls && productData.imageUrls.length > 0) ? productData.imageUrls[0] : '/images/no-image.png',
+                    quantity: 1
+                };
+
+                // Rút giỏ hàng hiện tại ra từ bộ nhớ trình duyệt
+                let cart = JSON.parse(localStorage.getItem('shoes_shop_cart')) || [];
+
+                // Kiểm tra trùng lắp (cùng sản phẩm, cùng màu, cùng size)
+                let existingItem = cart.find(item =>
+                    item.productId === cartItem.productId &&
+                    item.colorId === cartItem.colorId &&
+                    item.sizeId === cartItem.sizeId
+                );
+
+                if (existingItem) {
+                    existingItem.quantity += 1; // Cộng dồn số lượng
+                } else {
+                    cart.push(cartItem); // Thêm dòng mới
+                }
+
+                // Đẩy ngược lại vào LocalStorage lưu trữ
+                localStorage.setItem('shoes_shop_cart', JSON.stringify(cart));
+
+                alert(`🎉 Thêm vào giỏ hàng thành công!\nSản phẩm: ${productData.productName}\nMàu: ${selectedColorName} | Size: ${selectedSizeName}`);
+            });
         });
-    });
-</script>
+    </script>
 }
