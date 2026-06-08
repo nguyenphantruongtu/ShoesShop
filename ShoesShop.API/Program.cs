@@ -8,6 +8,7 @@ using ShoesShop.Business.Interfaces;
 using ShoesShop.Business.Services;
 using ShoesShop.Data.Context;
 using ShoesShop.Data.Entities;
+using ShoesShop.Data.Interfaces;
 using ShoesShop.Data.Repositories;
 using ShoesShop.Data.Repositories.Interfaces;
 using ShoesShop.Data.SeedData;
@@ -21,11 +22,11 @@ public class Program
     {
         var builder = WebApplication.CreateBuilder(args);
 
-        // DbContext
+        // ── DbContext ────────────────────────────────────────────────────
         builder.Services.AddDbContext<ShoeStoreDbContext>(options =>
             options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-        // ── Repositories ────────────────────────────────────────────────
+        // ── Repositories ─────────────────────────────────────────────────
         builder.Services.AddScoped<IUserRepository, UserRepository>();
         builder.Services.AddScoped<IRoleRepository, RoleRepository>();
         builder.Services.AddScoped<IAddressRepository, AddressRepository>();
@@ -37,7 +38,7 @@ public class Program
         builder.Services.AddScoped<IColorRepository, ColorRepository>();
         builder.Services.AddScoped<IProductVariantRepository, ProductVariantRepository>();
 
-        // ── Business Services ────────────────────────────────────────────
+        // ── Business Services ─────────────────────────────────────────────
         // F1 – Auth
         builder.Services.AddScoped<IJwtService, JwtService>();
         builder.Services.AddScoped<IAuthService, AuthService>();
@@ -47,14 +48,14 @@ public class Program
         builder.Services.AddScoped<IAddressService, AddressService>();
         builder.Services.AddScoped<IAdminUserService, AdminUserService>();
 
-        // F3 – Catalog Services
+        // F3 – Catalog
         builder.Services.AddScoped<IProductService, ProductService>();
         builder.Services.AddScoped<ICategoryService, CategoryService>();
         builder.Services.AddScoped<IBrandService, BrandService>();
         builder.Services.AddScoped<ISizeColorService, SizeColorService>();
         builder.Services.AddScoped<IProductVariantService, ProductVariantService>();
 
-        // F9 + F10 – Order (Customer Tracking + Staff Management)
+        // F9 + F10 – Order
         builder.Services.AddScoped<IOrderRepository, OrderRepository>();
         builder.Services.AddScoped<IOrderService, OrderService>();
 
@@ -69,13 +70,13 @@ public class Program
         // F14 – Dashboard
         builder.Services.AddScoped<IDashboardService, DashboardService>();
 
-        // ── AutoMapper ───────────────────────────────────────────────────
+        // ── AutoMapper ────────────────────────────────────────────────────
         builder.Services.AddAutoMapper(cfg =>
         {
             cfg.AddProfile<ShoesShop.Business.MappingProfile>();
         });
 
-        // ── JWT Authentication ───────────────────────────────────────────
+        // ── JWT Authentication ────────────────────────────────────────────
         var jwtKey      = builder.Configuration["JwtSettings:SecretKey"]!;
         var jwtIssuer   = builder.Configuration["JwtSettings:Issuer"]!;
         var jwtAudience = builder.Configuration["JwtSettings:Audience"]!;
@@ -98,7 +99,7 @@ public class Program
 
         builder.Services.AddAuthorization();
 
-        // ── CORS ─────────────────────────────────────────────────────────
+        // ── CORS ──────────────────────────────────────────────────────────
         builder.Services.AddCors(options =>
         {
             options.AddPolicy("AllowAll", policy =>
@@ -109,7 +110,7 @@ public class Program
             });
         });
 
-        // ── Controllers + OData ──────────────────────────────────────────
+        // ── Controllers + OData ───────────────────────────────────────────
         var odataBuilder = new ODataConventionModelBuilder();
         odataBuilder.EntitySet<Product>("Products");
 
@@ -123,7 +124,7 @@ public class Program
                 .SetMaxTop(100)
             );
 
-        // ── Swagger ──────────────────────────────────────────────────────
+        // ── Swagger ───────────────────────────────────────────────────────
         builder.Services.AddEndpointsApiExplorer();
         builder.Services.AddSwaggerGen(c =>
         {
@@ -131,12 +132,12 @@ public class Program
 
             c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
             {
-                Name        = "Authorization",
-                Type        = SecuritySchemeType.Http,
-                Scheme      = "bearer",
+                Name         = "Authorization",
+                Type         = SecuritySchemeType.Http,
+                Scheme       = "bearer",
                 BearerFormat = "JWT",
-                In          = ParameterLocation.Header,
-                Description = "Nhập JWT token. Ví dụ: Bearer eyJhbGci..."
+                In           = ParameterLocation.Header,
+                Description  = "Nhập JWT token. Ví dụ: Bearer eyJhbGci..."
             });
 
             c.AddSecurityRequirement(new OpenApiSecurityRequirement
@@ -158,7 +159,6 @@ public class Program
         // ════════════════════════════════════════════════════════════════
         var app = builder.Build();
 
-        // Seed roles
         await DbInitializer.SeedRolesAsync(app.Services);
 
         if (app.Environment.IsDevelopment())
@@ -170,7 +170,7 @@ public class Program
         app.UseHttpsRedirection();
         app.UseCors("AllowAll");
 
-        app.UseAuthentication();   // phải trước UseAuthorization
+        app.UseAuthentication();
         app.UseAuthorization();
 
         app.MapControllers();

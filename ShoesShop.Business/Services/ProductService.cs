@@ -1,13 +1,17 @@
 using ShoesShop.Business.Interfaces;
 using ShoesShop.Data.Entities;
 using ShoesShop.Data.Repositories.Interfaces;
+using ShoesShop.Shared.DTOs;
 
 namespace ShoesShop.Business.Services;
 
 public class ProductService : IProductService
 {
     private readonly IProductRepository _repo;
+
     public ProductService(IProductRepository repo) => _repo = repo;
+
+    // ── F3 Admin CRUD ───────────────────────────────────────────────────
 
     public async Task<ProductListResponse> GetListAsync(
         string? search, int? categoryId, int? brandId, bool? isActive, int page, int pageSize)
@@ -21,21 +25,21 @@ public class ProductService : IProductService
         {
             Products = products.Select(p => new ProductListItem
             {
-                ProductId = p.ProductId,
-                ProductName = p.ProductName,
-                Slug = p.Slug,
-                CategoryName = p.Category.CategoryName,
-                BrandName = p.Brand.BrandName,
-                BasePrice = p.BasePrice,
-                SalePrice = p.SalePrice,
-                IsActive = p.IsActive,
-                IsFeatured = p.IsFeatured,
-                PrimaryImageUrl = p.ProductImages.FirstOrDefault(i => i.IsPrimary)?.ImageUrl,
-                CreatedAt = p.CreatedAt
+                ProductId        = p.ProductId,
+                ProductName      = p.ProductName,
+                Slug             = p.Slug,
+                CategoryName     = p.Category.CategoryName,
+                BrandName        = p.Brand.BrandName,
+                BasePrice        = p.BasePrice,
+                SalePrice        = p.SalePrice,
+                IsActive         = p.IsActive,
+                IsFeatured       = p.IsFeatured,
+                PrimaryImageUrl  = p.ProductImages.FirstOrDefault(i => i.IsPrimary)?.ImageUrl,
+                CreatedAt        = p.CreatedAt
             }).ToList(),
             TotalCount = total,
-            Page = page,
-            PageSize = pageSize
+            Page       = page,
+            PageSize   = pageSize
         };
     }
 
@@ -57,31 +61,31 @@ public class ProductService : IProductService
 
         var product = new Product
         {
-            ProductName = request.ProductName,
-            Slug = slug,
-            CategoryId = request.CategoryId,
-            BrandId = request.BrandId,
-            Description = request.Description,
+            ProductName      = request.ProductName,
+            Slug             = slug,
+            CategoryId       = request.CategoryId,
+            BrandId          = request.BrandId,
+            Description      = request.Description,
             ShortDescription = request.ShortDescription,
-            BasePrice = request.BasePrice,
-            SalePrice = request.SalePrice,
-            Gender = request.Gender,
-            Material = request.Material,
-            IsActive = request.IsActive,
-            IsFeatured = request.IsFeatured,
-            ViewCount = 0,
-            CreatedAt = DateTime.UtcNow
+            BasePrice        = request.BasePrice,
+            SalePrice        = request.SalePrice,
+            Gender           = request.Gender,
+            Material         = request.Material,
+            IsActive         = request.IsActive,
+            IsFeatured       = request.IsFeatured,
+            ViewCount        = 0,
+            CreatedAt        = DateTime.UtcNow
         };
 
         if (request.Images.Any())
         {
-            var hasPrimary = request.Images.Any(i => i.IsPrimary);
-            if (!hasPrimary) request.Images[0].IsPrimary = true;
+            if (!request.Images.Any(i => i.IsPrimary))
+                request.Images[0].IsPrimary = true;
 
             product.ProductImages = request.Images.Select((img, idx) => new ProductImage
             {
-                ImageUrl = img.ImageUrl,
-                IsPrimary = img.IsPrimary,
+                ImageUrl     = img.ImageUrl,
+                IsPrimary    = img.IsPrimary,
                 DisplayOrder = img.DisplayOrder > 0 ? img.DisplayOrder : idx
             }).ToList();
         }
@@ -104,19 +108,19 @@ public class ProductService : IProductService
         if (await _repo.SlugExistsAsync(slug, id))
             slug = SlugHelper.GenerateUnique(request.ProductName, DateTime.UtcNow.Ticks.ToString()[^4..]);
 
-        product.ProductName = request.ProductName;
-        product.Slug = slug;
-        product.CategoryId = request.CategoryId;
-        product.BrandId = request.BrandId;
-        product.Description = request.Description;
+        product.ProductName      = request.ProductName;
+        product.Slug             = slug;
+        product.CategoryId       = request.CategoryId;
+        product.BrandId          = request.BrandId;
+        product.Description      = request.Description;
         product.ShortDescription = request.ShortDescription;
-        product.BasePrice = request.BasePrice;
-        product.SalePrice = request.SalePrice;
-        product.Gender = request.Gender;
-        product.Material = request.Material;
-        product.IsActive = request.IsActive;
-        product.IsFeatured = request.IsFeatured;
-        product.UpdatedAt = DateTime.UtcNow;
+        product.BasePrice        = request.BasePrice;
+        product.SalePrice        = request.SalePrice;
+        product.Gender           = request.Gender;
+        product.Material         = request.Material;
+        product.IsActive         = request.IsActive;
+        product.IsFeatured       = request.IsFeatured;
+        product.UpdatedAt        = DateTime.UtcNow;
 
         await _repo.UpdateAsync(product);
 
@@ -129,8 +133,7 @@ public class ProductService : IProductService
         var product = await _repo.GetByIdAsync(id)
             ?? throw new KeyNotFoundException("Không tìm thấy sản phẩm.");
 
-        // Soft delete — giữ data, chỉ ẩn
-        product.IsActive = false;
+        product.IsActive  = false;
         product.UpdatedAt = DateTime.UtcNow;
         await _repo.UpdateAsync(product);
     }
@@ -145,18 +148,18 @@ public class ProductService : IProductService
 
         var image = new ProductImage
         {
-            ProductId = productId,
-            ImageUrl = request.ImageUrl,
-            IsPrimary = request.IsPrimary,
+            ProductId    = productId,
+            ImageUrl     = request.ImageUrl,
+            IsPrimary    = request.IsPrimary,
             DisplayOrder = request.DisplayOrder
         };
         await _repo.AddImageAsync(image);
 
         return new ProductImageResponse
         {
-            ImageId = image.ImageId,
-            ImageUrl = image.ImageUrl,
-            IsPrimary = image.IsPrimary,
+            ImageId      = image.ImageId,
+            ImageUrl     = image.ImageUrl,
+            IsPrimary    = image.IsPrimary,
             DisplayOrder = image.DisplayOrder
         };
     }
@@ -182,19 +185,19 @@ public class ProductService : IProductService
 
         await _repo.ClearPrimaryImageAsync(productId);
         image.IsPrimary = true;
-        // EF tracks change automatically via Update
         await _repo.AddImageAsync(image);
 
         return new ProductImageResponse
         {
-            ImageId = image.ImageId,
-            ImageUrl = image.ImageUrl,
-            IsPrimary = true,
+            ImageId      = image.ImageId,
+            ImageUrl     = image.ImageUrl,
+            IsPrimary    = true,
             DisplayOrder = image.DisplayOrder
         };
     }
 
     // ── F4 Public Browse ────────────────────────────────────────────────
+
     public async Task<IEnumerable<ProductDto>> GetFeaturedProductsAsync()
     {
         var (products, _) = await _repo.GetPaginatedAsync(null, null, null, true, 1, 50);
@@ -208,80 +211,125 @@ public class ProductService : IProductService
         return products.Select(MapToProductDto);
     }
 
-    public async Task<ProductDto?> GetProductDetailAsync(int id)
+    public async Task<ProductDetailDto?> GetProductDetailAsync(int productId)
     {
-        var p = await _repo.GetByIdWithDetailsAsync(id);
-        return p is null ? null : MapToProductDto(p);
+        var p = await _repo.GetByIdWithDetailsAsync(productId);
+        if (p is null) return null;
+
+        return new ProductDetailDto
+        {
+            ProductId        = p.ProductId,
+            ProductName      = p.ProductName,
+            BasePrice        = p.BasePrice,
+            SalePrice        = p.SalePrice,
+            ShortDescription = p.ShortDescription,
+            Description      = p.Description,
+            Gender           = p.Gender,
+
+            ImageUrls = p.ProductImages
+                         .OrderBy(img => img.DisplayOrder)
+                         .Select(img => img.ImageUrl)
+                         .ToList(),
+
+            Colors = p.ProductVariants
+                      .Where(v => v.Color != null)
+                      .Select(v => new ColorDto
+                      {
+                          ColorId   = v.Color!.ColorId,
+                          ColorName = v.Color.ColorName,
+                          HexCode   = v.Color.HexCode
+                      })
+                      .GroupBy(c => c.ColorId)
+                      .Select(g => g.First())
+                      .ToList(),
+
+            Sizes = p.ProductVariants
+                     .Where(v => v.Size != null)
+                     .Select(v => new SizeDto
+                     {
+                         SizeId   = v.Size!.SizeId,
+                         SizeName = v.Size.SizeValue
+                     })
+                     .GroupBy(s => s.SizeId)
+                     .Select(g => g.First())
+                     .OrderBy(s => s.SizeName)
+                     .ToList()
+        };
     }
+
+    // ── Private Mappers ─────────────────────────────────────────────────
 
     private static ProductDto MapToProductDto(Product p) => new()
     {
-        ProductId = p.ProductId,
-        ProductName = p.ProductName,
-        Slug = p.Slug,
-        CategoryId = p.CategoryId,
-        BrandId = p.BrandId,
-        Description = p.Description,
+        ProductId        = p.ProductId,
+        ProductName      = p.ProductName,
+        Slug             = p.Slug,
+        CategoryId       = p.CategoryId,
+        BrandId          = p.BrandId,
+        Description      = p.Description,
         ShortDescription = p.ShortDescription,
-        BasePrice = p.BasePrice,
-        SalePrice = p.SalePrice,
-        Gender = p.Gender,
-        Material = p.Material,
-        ImageUrls = p.ProductImages.OrderBy(i => i.DisplayOrder).Select(i => i.ImageUrl).ToList(),
-        Variants = p.ProductVariants.Where(v => v.IsActive).Select(v => new ProductVariantDto
+        BasePrice        = p.BasePrice,
+        SalePrice        = p.SalePrice,
+        Gender           = p.Gender,
+        Material         = p.Material,
+        ImageUrls        = p.ProductImages
+                            .OrderBy(i => i.DisplayOrder)
+                            .Select(i => i.ImageUrl)
+                            .ToList(),
+        Variants         = p.ProductVariants.Where(v => v.IsActive).Select(v => new ProductVariantDto
         {
-            VariantId = v.VariantId,
-            SizeId = v.SizeId,
-            SizeValue = v.Size.SizeValue,
-            ColorId = v.ColorId,
-            ColorName = v.Color.ColorName,
-            HexCode = v.Color.HexCode,
-            SKU = v.Sku,
-            Price = v.Price,
+            VariantId     = v.VariantId,
+            SizeId        = v.SizeId,
+            SizeValue     = v.Size.SizeValue,
+            ColorId       = v.ColorId,
+            ColorName     = v.Color.ColorName,
+            HexCode       = v.Color.HexCode,
+            SKU           = v.Sku,
+            Price         = v.Price,
             StockQuantity = v.StockQuantity
         }).ToList()
     };
 
     private static ProductDetailResponse MapToDetail(Product p) => new()
     {
-        ProductId = p.ProductId,
-        ProductName = p.ProductName,
-        Slug = p.Slug,
-        CategoryId = p.CategoryId,
-        CategoryName = p.Category.CategoryName,
-        BrandId = p.BrandId,
-        BrandName = p.Brand.BrandName,
-        Description = p.Description,
+        ProductId        = p.ProductId,
+        ProductName      = p.ProductName,
+        Slug             = p.Slug,
+        CategoryId       = p.CategoryId,
+        CategoryName     = p.Category.CategoryName,
+        BrandId          = p.BrandId,
+        BrandName        = p.Brand.BrandName,
+        Description      = p.Description,
         ShortDescription = p.ShortDescription,
-        BasePrice = p.BasePrice,
-        SalePrice = p.SalePrice,
-        Gender = p.Gender,
-        Material = p.Material,
-        IsActive = p.IsActive,
-        IsFeatured = p.IsFeatured,
-        ViewCount = p.ViewCount,
-        CreatedAt = p.CreatedAt,
-        UpdatedAt = p.UpdatedAt,
-        Images = p.ProductImages.Select(i => new ProductImageResponse
+        BasePrice        = p.BasePrice,
+        SalePrice        = p.SalePrice,
+        Gender           = p.Gender,
+        Material         = p.Material,
+        IsActive         = p.IsActive,
+        IsFeatured       = p.IsFeatured,
+        ViewCount        = p.ViewCount,
+        CreatedAt        = p.CreatedAt,
+        UpdatedAt        = p.UpdatedAt,
+        Images           = p.ProductImages.Select(i => new ProductImageResponse
         {
-            ImageId = i.ImageId,
-            ImageUrl = i.ImageUrl,
-            IsPrimary = i.IsPrimary,
+            ImageId      = i.ImageId,
+            ImageUrl     = i.ImageUrl,
+            IsPrimary    = i.IsPrimary,
             DisplayOrder = i.DisplayOrder
         }).ToList(),
-        Variants = p.ProductVariants.Select(v => new VariantResponse
+        Variants         = p.ProductVariants.Select(v => new VariantResponse
         {
-            VariantId = v.VariantId,
-            ProductId = v.ProductId,
-            SizeId = v.SizeId,
-            SizeValue = v.Size.SizeValue,
-            ColorId = v.ColorId,
-            ColorName = v.Color.ColorName,
-            HexCode = v.Color.HexCode,
-            Sku = v.Sku,
-            Price = v.Price,
+            VariantId     = v.VariantId,
+            ProductId     = v.ProductId,
+            SizeId        = v.SizeId,
+            SizeValue     = v.Size.SizeValue,
+            ColorId       = v.ColorId,
+            ColorName     = v.Color.ColorName,
+            HexCode       = v.Color.HexCode,
+            Sku           = v.Sku,
+            Price         = v.Price,
             StockQuantity = v.StockQuantity,
-            IsActive = v.IsActive
+            IsActive      = v.IsActive
         }).ToList()
     };
 }

@@ -1,0 +1,195 @@
+﻿@{
+	ViewData["Title"] = "Thanh toán đơn hàng";
+	Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="container my-5">
+	<h2 class="fw-bold mb-4 text-dark"><i class="bi bi-credit-card-2-front-fill me-2 text-primary"></i>Thanh Toán Đơn Hàng</h2>
+
+	<div class="row">
+		<div class="col-lg-7 mb-4">
+			<div class="card border-0 shadow-sm rounded-4 p-4">
+				<h5 class="fw-bold text-dark mb-4 border-bottom pb-2">Thông tin nhận hàng</h5>
+				<form id="form-checkout">
+					<div class="mb-3">
+						<label class="form-label small fw-semibold text-secondary">Họ và tên người nhận <span class="text-danger">*</span></label>
+						<input type="text" id="customer-name" class="form-control bg-light border-0 py-2.5" placeholder="Ví dụ: Nguyễn Văn A" required>
+					</div>
+
+					<div class="row">
+						<div class="col-md-6 mb-3">
+							<label class="form-label small fw-semibold text-secondary">Số điện thoại <span class="text-danger">*</span></label>
+							<input type="tel" id="customer-phone" class="form-control bg-light border-0 py-2.5" placeholder="Ví dụ: 0912345678" required>
+						</div>
+						<div class="col-md-6 mb-3">
+							<label class="form-label small fw-semibold text-secondary">Địa chỉ Email</label>
+							<input type="email" id="customer-email" class="form-control bg-light border-0 py-2.5" placeholder="name@example.com">
+						</div>
+					</div>
+
+					<div class="mb-3">
+						<label class="form-label small fw-semibold text-secondary">Địa chỉ giao hàng đầy đủ <span class="text-danger">*</span></label>
+						<input type="text" id="customer-address" class="form-control bg-light border-0 py-2.5" placeholder="Số nhà, tên đường, xã/phường, quận/huyện, tỉnh..." required>
+					</div>
+
+					<div class="mb-3">
+						<label class="form-label small fw-semibold text-secondary">Ghi chú đơn hàng</label>
+						<textarea id="order-notes" class="form-control bg-light border-0" rows="3" placeholder="Ghi chú về thời gian giao hàng, chỉ dẫn đường đi..."></textarea>
+					</div>
+				</form>
+			</div>
+		</div>
+
+		<div class="col-lg-5">
+			<div class="card border-0 shadow-sm rounded-4 p-4 sticky-top" style="top: 20px;">
+				<h5 class="fw-bold text-dark mb-3 border-bottom pb-2">Đơn hàng của bạn</h5>
+
+				<div id="checkout-items-preview" class="mb-4 overflow-auto" style="max-height: 280px;">
+				</div>
+
+				<div class="d-flex justify-content-between mb-2">
+					<span class="text-muted">Tạm tính:</span>
+					<span id="checkout-subtotal" class="fw-semibold text-dark">0 đ</span>
+				</div>
+				<div class="d-flex justify-content-between mb-3">
+					<span class="text-muted">Phí giao hàng:</span>
+					<span class="text-success fw-medium">Miễn phí</span>
+				</div>
+
+				<hr class="text-muted">
+
+				<div class="d-flex justify-content-between align-items-center mb-4">
+					<span class="fw-bold text-dark fs-5">Tổng số tiền thanh toán:</span>
+					<span id="checkout-total" class="fw-bold text-danger fs-4">0 đ</span>
+				</div>
+
+				<button type="button" id="btn-submit-order" class="btn btn-primary btn-lg w-100 py-3 rounded-pill text-uppercase fw-bold shadow">
+					<i class="bi bi-check-circle-fill me-2"></i> Xác nhận đặt hàng
+				</button>
+			</div>
+		</div>
+	</div>
+</div>
+
+@section Scripts {
+	<script>
+		$(document).ready(function () {
+
+			const apiOrderUrl = 'https://localhost:7214/api/orders';
+			let cart = JSON.parse(localStorage.getItem('shoes_shop_cart')) || [];
+
+			// Kiểm tra an toàn: Nếu giỏ hàng trống rỗng thì đá ngược người dùng về trang chủ
+			if (cart.length === 0) {
+				alert("Giỏ hàng của bạn đang trống! Vui lòng chọn sản phẩm trước khi thanh toán.");
+				window.location.href = '/';
+				return;
+			}
+
+			// 1. Đọc và hiển thị tóm tắt danh sách giày cần mua
+			function renderCheckoutSummary() {
+				let htmlSummary = '';
+				let totalAmount = 0;
+
+				cart.forEach(item => {
+					let itemTotal = item.salePrice * item.quantity;
+					totalAmount += itemTotal;
+
+					htmlSummary += `
+						<div class="d-flex align-items-center mb-3 border-bottom border-light pb-3">
+							<img src="${item.primaryImageUrl}" class="rounded border me-3" style="width: 55px; height: 55px; object-fit: cover;" alt="giày">
+							<div class="flex-grow-1 overflow-hidden">
+								<h6 class="mb-0 fw-bold text-dark text-truncate small">${item.productName}</h6>
+								<small class="text-muted">Màu: ${item.colorName} | Size: ${item.sizeName} | SL: ${item.quantity}</small>
+							</div>
+							<div class="text-end ps-2">
+								<span class="fw-semibold text-dark small">${itemTotal.toLocaleString('vi-VN')} đ</span>
+							</div>
+						</div>`;
+				});
+
+				$('#checkout-items-preview').html(htmlSummary);
+				$('#checkout-subtotal').text(totalAmount.toLocaleString('vi-VN') + ' đ');
+				$('#checkout-total').text(totalAmount.toLocaleString('vi-VN') + ' đ');
+			}
+
+			renderCheckoutSummary();
+
+			// 2. Xử lý sự kiện click nút XÁC NHẬN ĐẶT HÀNG
+			$('#btn-submit-order').click(function () {
+				// Kiểm tra tính hợp lệ của biểu mẫu (Validate form dữ liệu trống)
+				let name = $('#customer-name').val().trim();
+				let phone = $('#customer-phone').val().trim();
+				let email = $('#customer-email').val().trim();
+				let address = $('#customer-address').val().trim();
+				let notes = $('#order-notes').val().trim();
+
+				if (!name || !phone || !address) {
+					alert("Vui lòng điền đầy đủ các thông tin bắt buộc có dấu (*)");
+					return;
+				}
+
+				// Khóa nút bấm lại tránh người dùng bấm liên tục tạo đơn trùng lắp
+				$(this).prop('disabled', true).html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Đang xử lý đơn hàng...');
+
+				// Tính tổng tiền đơn hàng
+				let totalAmount = cart.reduce((sum, item) => sum + (item.salePrice * item.quantity), 0);
+
+				// FIX LỖI 400: Viết hoa đúng PascalCase khớp DTO Backend và ép chuẩn kiểu số/chuỗi
+				let orderData = {
+					RecipientName: name,
+					RecipientPhone: phone,
+					ShippingAddress: address,
+					Province: "Chưa phân loại",
+					District: "Chưa phân loại",
+					Ward: "Chưa phân loại",
+					Note: notes,
+					SubTotal: parseFloat(totalAmount),
+					TotalAmount: parseFloat(totalAmount),
+					OrderItems: cart.map(item => {
+						return {
+							// Nếu variantId bị thiếu hoặc bằng 0, ép về 1 (Id của dòng mẫu trong DB) để tránh lỗi Foreign Key
+							VariantId: parseInt(item.variantId || item.VariantId || 1),
+							ProductName: String(item.productName || "Giày Sneaker"),
+							SizeValue: String(item.sizeName || "Mặc định"),
+							ColorName: String(item.colorName || "Mặc định"),
+							Quantity: parseInt(item.quantity || 1),
+							UnitPrice: parseFloat(item.salePrice || 0)
+						};
+					})
+				};
+
+				console.log("Dữ liệu gửi lên API Orders (Đã sửa lỗi 400):", orderData);
+
+				// 3. Thực hiện gửi lệnh POST ngầm đẩy đơn hàng vào Database qua API
+				$.ajax({
+					url: apiOrderUrl,
+					type: 'POST',
+					contentType: 'application/json',
+					data: JSON.stringify(orderData),
+					success: function (response) {
+						// Chấp nhận cả 2 định dạng response: trực tiếp hoặc bọc qua thuộc tính .success
+						if (response && (response.success === true || response.Success === true || response.data)) {
+							// Xóa sạch giỏ hàng trong LocalStorage vì đã mua thành công
+							localStorage.removeItem('shoes_shop_cart');
+
+							let idDonHang = response.data || response.Data || '';
+							alert(`🎉 Chúc mừng!\nĐơn hàng của bạn đã được hệ thống tiếp nhận thành công.\nMã ID đơn hàng của bạn là: ${idDonHang}`);
+
+							// Chuyển hướng người dùng về trang chủ
+							window.location.href = '/';
+						} else {
+							alert("Đặt hàng thất bại: " + (response.message || response.Message || "Lỗi hệ thống xử lý API"));
+							$('#btn-submit-order').prop('disabled', false).html('<i class="bi bi-check-circle-fill me-2"></i> Xác nhận đặt hàng');
+						}
+					},
+					error: function (xhr) {
+						// In chi tiết phản hồi lỗi từ API để dễ theo dõi nếu còn trục trặc
+						console.error("Chi tiết lỗi 400/500 từ API:", xhr.responseText);
+						alert(`Lỗi kết nối API đặt hàng (Mã lỗi: ${xhr.status}). Không thể tạo đơn, vui lòng thử lại!`);
+						$('#btn-submit-order').prop('disabled', false).html('<i class="bi bi-check-circle-fill me-2"></i> Xác nhận đặt hàng');
+					}
+				});
+			});
+		});
+	</script>
+}

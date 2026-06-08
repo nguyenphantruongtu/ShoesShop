@@ -2,56 +2,235 @@
 
 @{
     ViewData["Title"] = "Trang Chủ - Shoes Shop";
+    Layout = "~/Views/Shared/_Layout.cshtml";
 }
 
-<div class="container mt-5">
-    <h2 class="text-center mb-4 font-weight-bold text-uppercase">Sản Phẩm Nổi Bật</h2>
-
-    @if (ViewBag.ErrorMessage != null)
-    {
-        <div class="alert alert-danger text-center">@ViewBag.ErrorMessage</div>
-    }
-
-    <div class="row">
-        @if (Model != null && Model.Any())
-        {
-            foreach (var product in Model)
-            {
-                <div class="col-md-3 mb-4">
-                    <div class="card h-100 shadow-sm border-0 rounded">
-                        <img src="@(product.ImageUrls.FirstOrDefault() ?? "/images/no-image.png")"
-                             class="card-img-top p-3 rounded" alt="@product.ProductName"
-                             style="height: 230px; object-fit: cover;">
-
-                        <div class="card-body d-flex flex-column justify-content-between">
-                            <h5 class="card-title font-weight-bold text-dark" style="font-size: 1rem;">@product.ProductName</h5>
-                            <p class="card-text text-muted small">@product.ShortDescription</p>
-
-                            <div class="d-flex justify-content-between align-items-center mt-3">
-                                <div>
-                                    @if (product.SalePrice.HasValue)
-                                    {
-                                        <span class="text-danger font-weight-bold">@product.SalePrice.Value.ToString("#,##0") đ</span>
-                                        <br />
-                                        <small class="text-muted text-decoration-line-through">@product.BasePrice.ToString("#,##0") đ</small>
-                                    }
-                                    else
-                                    {
-                                        <span class="text-dark font-weight-bold">@product.BasePrice.ToString("#,##0") đ</span>
-                                    }
-                                </div>
-                                <a href="/products/@product.ProductId" class="btn btn-sm btn-outline-primary rounded-pill px-3">Xem Chi Tiết</a>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            }
-        }
-        else
-        {
-            <div class="col-12 text-center text-muted">
-                <p>Hiện tại chưa có sản phẩm nổi bật nào được kích hoạt.</p>
-            </div>
-        }
+<div class="container my-5">
+    <div class="row align-items-center p-4 p-md-5 rounded-5 shadow-sm" style="background-color: #f8faff;">
+        <div class="col-lg-6 mb-4 mb-lg-0">
+            <span class="badge bg-primary bg-opacity-10 text-primary px-3 py-2 rounded-pill fw-bold mb-3 small">✨ Mới nhất 2026</span>
+            <h1 class="display-4 fw-black text-dark mb-3" style="letter-spacing: -1px; font-weight: 800; color: #3b448f !important;">Khám Phá Sản Phẩm<br>Chất Lượng Hôm Nay</h1>
+            <p class="text-secondary lh-lg mb-4" style="max-width: 500px;">
+                Duyệt qua bộ sưu tập phong phú các mặt hàng giày thể thao cao cấp và thời thượng của chúng tôi. Từ công nghệ đệm mới nhất đến nhu cầu phong cách hàng ngày, chúng tôi có tất cả những gì bạn cần.
+            </p>
+            <a href="#product-collection-section" class="btn btn-primary btn-lg rounded-4 px-4 py-3 fw-bold shadow-sm transition-link">
+                Mua Ngay <i class="bi bi-arrow-right ms-2"></i>
+            </a>
+        </div>
+        <div class="col-lg-6 text-center">
+            <img src="https://images.unsplash.com/photo-1542291026-7eec264c27ff?q=80&w=600&auto=format&fit=crop"
+                 alt="Giày Sneaker Banner"
+                 class="img-fluid rounded-4 shadow"
+                 style="max-height: 400px; object-fit: cover; border: 8px solid #fff;">
+        </div>
     </div>
 </div>
+
+<div id="product-collection-section" class="container my-5 pt-4">
+    <div class="text-center mb-4">
+        <span class="text-uppercase text-primary fw-bold small tracking-wider" style="letter-spacing: 2px;">Bộ Sưu Tập</span>
+        <h2 class="fw-bold text-dark mt-1">Khám Phá Sản Phẩm</h2>
+    </div>
+
+    <div class="card border-0 shadow-sm rounded-4 p-3 mb-5" style="background-color: #fff;">
+        <div class="row g-3">
+            <div class="col-md-6">
+                <div class="input-group">
+                    <span class="input-group-text bg-light border-0 text-muted"><i class="bi bi-search"></i></span>
+                    <input type="text" id="search-input" class="form-control bg-light border-0 py-2.5 ps-1" placeholder="Tìm kiếm sản phẩm theo tên...">
+                </div>
+            </div>
+            <div class="col-md-4">
+                <select id="sort-select" class="form-select bg-light border-0 py-2.5 text-secondary">
+                    <option value="newest">Sắp xếp: Mới nhất</option>
+                    <option value="price-asc">Giá: Thấp đến Cao</option>
+                    <option value="price-desc">Giá: Cao đến Thấp</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <button id="btn-filter" class="btn btn-primary w-100 py-2.5 rounded-3 fw-bold text-uppercase">Lọc</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="home-loading" class="text-center py-5">
+        <div class="spinner-border text-primary" role="status"></div>
+        <p class="text-muted mt-2">Đang nạp danh sách giày từ hệ thống API...</p>
+    </div>
+
+    <div id="products-grid" class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-4 d-none">
+    </div>
+</div>
+
+<style>
+    .product-card {
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+
+        .product-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 1rem 3rem rgba(0,0,0,.125) !important;
+        }
+
+    .img-container {
+        position: relative;
+        overflow: hidden;
+        background-color: #f8f9fa;
+    }
+
+    .product-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.2);
+        opacity: 0;
+        transition: opacity 0.3s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .product-card:hover .product-overlay {
+        opacity: 1;
+    }
+</style>
+
+@section Scripts {
+    <script>
+        $(document).ready(function () {
+            const apiUrl = 'https://localhost:7214/api/products';
+            let originalProducts = [];
+
+            // 1. Gọi AJAX lấy danh sách sản phẩm
+            $.ajax({
+                url: apiUrl,
+                type: 'GET',
+                dataType: 'json',
+                success: function (response) {
+                    console.log("Dữ liệu API thực tế trả về:", response); // Bạn có thể nhấn F12 trên trình duyệt để kiểm tra
+
+                    // TỰ ĐỘNG KHỚP CẤU TRÚC:
+                    // Trường hợp 1: API trả về kiểu bọc thông thường { success: true, data: [...] }
+                    if (response && response.success && Array.isArray(response.data)) {
+                        originalProducts = response.data;
+                    }
+                    // Trường hợp 2: API trả về thẳng một mảng thuần [...]
+                    else if (Array.isArray(response)) {
+                        originalProducts = response;
+                    }
+                    // Trường hợp 3: API trả về kiểu bọc nhưng chỉ có data dạng mảng
+                    else if (response && Array.isArray(response.data)) {
+                        originalProducts = response.data;
+                    }
+
+                    // Nếu sau khi kiểm tra mà có dữ liệu, tiến hành vẽ giao diện
+                    if (originalProducts && originalProducts.length >= 0) {
+                        renderProductsList(originalProducts);
+                    } else {
+                        $('#home-loading').html('<div class="alert alert-warning text-center">Dữ liệu trả về từ API không phải là một danh sách hợp lệ!</div>');
+                    }
+                },
+                error: function (xhr) {
+                    $('#home-loading').html(`<div class="alert alert-danger text-center">Lỗi kết nối API Backend (Mã lỗi: ${xhr.status}). Vui lòng kiểm tra dự án API đã chạy và kết nối được Database chưa!</div>`);
+                }
+            });
+
+            // 2. Hàm vòng lặp xây dựng thẻ hiển thị sản phẩm
+            function renderProductsList(products) {
+                if (products.length === 0) {
+                    $('#products-grid').html('<div class="col-12 text-center text-muted py-5">Hiện tại hệ thống chưa có sản phẩm giày nào!</div>').removeClass('d-none');
+                    $('#home-loading').hide();
+                    return;
+                }
+
+                let cardsHtml = '';
+                products.forEach(product => {
+                    // Kiểm tra và lấy ảnh, hỗ trợ cả chữ viết hoa/viết thường của thuộc tính (imageUrls hoặc ImageUrls)
+                    let urls = product.imageUrls || product.ImageUrls || [];
+                    let mainImage = (urls.length > 0) ? urls[0] : '/images/no-image.png';
+
+                    // Hỗ trợ cả thuộc tính viết hoa/thường từ API (productId hoặc ProductId)
+                    let pId = product.productId || product.ProductId || product.id;
+                    let pName = product.productName || product.ProductName;
+                    let pPrice = product.salePrice || product.SalePrice || product.basePrice || product.BasePrice || 0;
+                    let pDesc = product.shortDescription || product.ShortDescription || "";
+
+                    let detailUrl = `/Products/Detail/${pId}`;
+
+                    cardsHtml += `
+                        <div class="col">
+                            <div class="card h-100 border-0 shadow-sm rounded-4 product-card overflow-hidden">
+                                <div class="img-container" style="height: 240px;">
+                                    <img src="${mainImage}" class="w-100 h-100" style="object-fit: cover;" alt="${pName}">
+                                    <div class="product-overlay">
+                                        <a href="${detailUrl}" class="btn btn-light btn-sm rounded-circle shadow-sm px-2.5 py-2" title="Xem chi tiết">
+                                            <i class="bi bi-eye-fill text-dark fs-5"></i>
+                                        </a>
+                                    </div>
+                                </div>
+                                <div class="card-body d-flex flex-column p-4">
+                                    <span class="text-uppercase text-muted fw-semibold mb-1" style="font-size: 0.72rem; letter-spacing: 0.5px;">Giày Sneaker</span>
+                                    <h6 class="card-title fw-bold text-dark mb-2 text-truncate" title="${pName}">
+                                        <a href="${detailUrl}" class="text-decoration-none text-dark hover-primary">${pName}</a>
+                                    </h6>
+                                    <div class="mt-auto d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <span class="text-danger fw-bold fs-6">${pPrice.toLocaleString('vi-VN')} đ</span>
+                                        </div>
+                                        <a href="${detailUrl}" class="btn btn-outline-primary btn-sm rounded-pill px-3 py-1 small fw-semibold">Xem chi tiết</a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>`;
+                });
+
+                // Tắt hiệu ứng loading và bật hiển thị giao diện chính công khai
+                $('#home-loading').hide();
+                $('#products-grid').html(cardsHtml).removeClass('d-none').show();
+            }
+
+            // 3. Logic xử lý tìm kiếm và sắp xếp giá tiền khi click nút "LỌC"
+            $('#btn-filter').click(function () {
+                let searchKeyword = $('#search-input').val().toLowerCase().trim();
+                let sortType = $('#sort-select').val();
+
+                let filteredResults = originalProducts.filter(p => {
+                    let name = (p.productName || p.ProductName || "").toLowerCase();
+                    let desc = (p.shortDescription || p.ShortDescription || "").toLowerCase();
+                    return name.includes(searchKeyword) || desc.includes(searchKeyword);
+                });
+
+                if (sortType === 'price-asc') {
+                    filteredResults.sort((a, b) => {
+                        let priceA = a.salePrice || a.SalePrice || 0;
+                        let priceB = b.salePrice || b.SalePrice || 0;
+                        return priceA - priceB;
+                    });
+                } else if (sortType === 'price-desc') {
+                    filteredResults.sort((a, b) => {
+                        let priceA = a.salePrice || a.SalePrice || 0;
+                        let priceB = b.salePrice || b.SalePrice || 0;
+                        return priceB - priceA;
+                    });
+                } else {
+                    filteredResults.sort((a, b) => {
+                        let idA = a.productId || a.ProductId || 0;
+                        let idB = b.productId || b.ProductId || 0;
+                        return idB - idA;
+                    });
+                }
+
+                renderProductsList(filteredResults);
+            });
+
+            // Bắt sự kiện gõ nút Enter trên bàn phím tại ô tìm kiếm
+            $('#search-input').keypress(function (e) {
+                if (e.which == 13) {
+                    $('#btn-filter').click();
+                }
+            });
+        });
+    </script>
+}

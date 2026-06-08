@@ -30,7 +30,7 @@ public class ProductRepository : IProductRepository
         if (brandId.HasValue)    query = query.Where(p => p.BrandId == brandId);
         if (isActive.HasValue)   query = query.Where(p => p.IsActive == isActive);
 
-        var total = await query.CountAsync();
+        var total    = await query.CountAsync();
         var products = await query
             .OrderByDescending(p => p.CreatedAt)
             .Skip((page - 1) * pageSize)
@@ -100,4 +100,7 @@ public class ProductRepository : IProductRepository
             .Where(i => i.ProductId == productId && i.IsPrimary)
             .ExecuteUpdateAsync(s => s.SetProperty(i => i.IsPrimary, false));
     }
+
+    public IQueryable<Product> GetQueryable()
+        => _context.Products.AsQueryable();
 }
