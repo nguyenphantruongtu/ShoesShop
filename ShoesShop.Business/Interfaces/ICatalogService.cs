@@ -50,7 +50,7 @@ public interface IProductService
     // ── F4 Public Browse (UC-01, UC-03, UC-04) ─────────────────────────
     Task<IEnumerable<ProductDto>> GetFeaturedProductsAsync();
     Task<IEnumerable<ProductDto>> SearchProductsAsync(string keyword);
-    Task<ProductDto?> GetProductDetailAsync(int id);
+    Task<ProductDetailDto?> GetProductDetailAsync(int id);
 }
 
 // UC-30

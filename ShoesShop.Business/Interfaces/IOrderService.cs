@@ -1,7 +1,12 @@
+using ShoesShop.Shared.DTOs.Order;
+
 namespace ShoesShop.Business.Interfaces;
 
 public interface IOrderService
 {
+    /// <summary>UC-17: Tạo đơn hàng từ checkout, trả về orderId</summary>
+    Task<int> CreateOrderAsync(CreateOrderRequest request, int userId);
+
     /// <summary>UC-31: Danh sách đơn hàng cho Staff (filter status, search mã đơn/SĐT)</summary>
     Task<OrderListResponse> GetOrdersAsync(string? search, string? status, int page, int pageSize);
 

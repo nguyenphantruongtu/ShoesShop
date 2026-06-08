@@ -4,6 +4,13 @@ namespace ShoesShop.Data.Repositories.Interfaces;
 
 public interface IOrderRepository
 {
+    // ── Generic + Transaction (dùng cho CreateOrderAsync) ───────────────────
+    Task AddAsync<T>(T entity) where T : class;
+    Task<int> SaveChangesAsync();
+    Task BeginTransactionAsync();
+    Task CommitTransactionAsync();
+    Task RollbackTransactionAsync();
+
     /// <summary>Danh sách đơn hàng có filter (search = OrderCode hoặc SĐT khách)</summary>
     Task<(List<Order> Orders, int TotalCount)> GetPaginatedAsync(
         string? search, string? status, int page, int pageSize);

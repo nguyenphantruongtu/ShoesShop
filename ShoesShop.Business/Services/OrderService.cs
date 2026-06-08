@@ -2,6 +2,7 @@ using ShoesShop.Business.Interfaces;
 using ShoesShop.Data.Entities;
 using ShoesShop.Data.Repositories.Interfaces;
 using ShoesShop.Shared.DTOs;
+using ShoesShop.Shared.DTOs.Order;
 
 namespace ShoesShop.Business.Services;
 

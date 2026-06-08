@@ -3,6 +3,13 @@ using System.ComponentModel.DataAnnotations;
 namespace ShoesShop.Shared.DTOs.Order;
 
 // ── STATUS CONSTANTS ───────────────────────────────────────────────────────────
+public static class PaymentStatus
+{
+    public const string Unpaid   = "Unpaid";
+    public const string Paid     = "Paid";
+    public const string Refunded = "Refunded";
+}
+
 public static class OrderStatus
 {
     public const string Pending   = "Pending";
@@ -148,4 +155,32 @@ public class CancelOrderRequest
     [Required]
     [MaxLength(500)]
     public string CancelReason { get; set; } = null!;
+}
+
+/// <summary>UC-17: Tạo đơn hàng từ checkout flow</summary>
+public class CreateOrderRequest
+{
+    [Required] public string RecipientName    { get; set; } = null!;
+    [Required] public string RecipientPhone   { get; set; } = null!;
+    [Required] public string ShippingAddress  { get; set; } = null!;
+    [Required] public string Province         { get; set; } = null!;
+    [Required] public string District         { get; set; } = null!;
+    [Required] public string Ward             { get; set; } = null!;
+    public string? Note                       { get; set; }
+    public int? VoucherId                     { get; set; }
+    public decimal SubTotal                   { get; set; }
+    public decimal ShippingFee                { get; set; }
+    public decimal DiscountAmount             { get; set; }
+    public decimal TotalAmount                { get; set; }
+    public List<CreateOrderItemRequest> Items { get; set; } = new();
+}
+
+public class CreateOrderItemRequest
+{
+    public int     VariantId   { get; set; }
+    public string  ProductName { get; set; } = null!;
+    public string  SizeValue   { get; set; } = null!;
+    public string  ColorName   { get; set; } = null!;
+    public decimal UnitPrice   { get; set; }
+    public int     Quantity    { get; set; }
 }

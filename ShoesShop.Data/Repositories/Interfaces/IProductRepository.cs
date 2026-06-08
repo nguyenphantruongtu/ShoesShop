@@ -4,6 +4,11 @@ namespace ShoesShop.Data.Repositories.Interfaces;
 
 public interface IProductRepository
 {
+    // F4 Browse: OData support
+    IQueryable<Product> GetQueryable();
+    Task<IEnumerable<Product>> GetFeaturedProductsAsync();
+    Task<IEnumerable<Product>> SearchProductsAsync(string keyword);
+
     Task<(List<Product> Products, int TotalCount)> GetPaginatedAsync(
         string? search, int? categoryId, int? brandId, bool? isActive, int page, int pageSize);
     Task<Product?> GetByIdAsync(int id);

@@ -8,7 +8,6 @@ using ShoesShop.Business.Interfaces;
 using ShoesShop.Business.Services;
 using ShoesShop.Data.Context;
 using ShoesShop.Data.Entities;
-using ShoesShop.Data.Interfaces;
 using ShoesShop.Data.Repositories;
 using ShoesShop.Data.Repositories.Interfaces;
 using ShoesShop.Data.SeedData;
@@ -54,6 +53,10 @@ public class Program
         builder.Services.AddScoped<IBrandService, BrandService>();
         builder.Services.AddScoped<ISizeColorService, SizeColorService>();
         builder.Services.AddScoped<IProductVariantService, ProductVariantService>();
+
+        // F5 – Cart
+        builder.Services.AddScoped<ICartRepository, CartRepository>();
+        builder.Services.AddScoped<ICartService, CartService>();
 
         // F9 + F10 – Order
         builder.Services.AddScoped<IOrderRepository, OrderRepository>();

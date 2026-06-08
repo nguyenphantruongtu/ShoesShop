@@ -1,0 +1,334 @@
+=== PAGE 1 ===
+Team: 3 fullstack devs
+Payment: PayOS
+Tổng UC: 46 use cases, gom thành 16 feature groups
+Dev assignment:
+🅰  Dev A - Catalog, Browse, Admin User & Dashboard
+🅱  Dev B - Customer Experience (Cart, Order, Engagement)
+🅲  Dev C - Payment, Staff Operations, DevOps
+Priority:
+P0 = Critical (phải xong, deploy fail nếu thiếu)
+P1 = High (core feature)
+P2 = Medium (nâng trải nghiệm)
+P3 = Low (làm nếu còn giờ)
+Status target:
+✅  = Must complete 100%
+🟡  = Target 80%, có thể cắt nếu thiếu giờ
+⚪  = Stretch goal
+Day: Ngày dự kiến hoàn thành (D1/D2/D3)
+UC ID Use Case Dev Priority Status Day Effort
+UC-05Đăng ký tài khoản 🅰P0 ✅ D1 1.5h
+SHOE STORE - FEATURE & UC BREAKDOWN
+(3-DAY PLAN)
+QUY ƯỚC
+F1. AUTHENTICATION & AUTHORIZATION
+6/4/26, 6:28 PM ShoeStore-FeatureUC-Breakdown.md
+file:///C:/Users/GIGABY~1/AppData/Local/Temp/omv-pdf-2pzIS3/ShoeStore-FeatureUC-Breakdown.print.html 1/10
+
+=== PAGE 2 ===
+UC ID Use Case Dev Priority Status Day Effort
+UC-06Đăng nhập (3 role: Customer/Staff/Admin)🅰P0 ✅ D1 2h
+UC-09Đăng xuất 🅰P0 ✅ D1 0.5h
+UC-11Đổi mật khẩu (khi đã đăng nhập) 🅱P1 ✅ D2 1h
+UC-07Quên mật khẩu / Reset qua email 🅱P2 🟡 D3 3h
+UC-08Xác thực email sau đăng ký 🅱P2 ⚪ D3 2h
+Tổng effort: 10h | Cross-cutting: Role-based middleware ảnh hưởng tất cả feature khác.
+UC ID Use Case Dev Priority Status Day Effort
+UC-10Xem/cập nhật profile (avatar, info) 🅲 P1 ✅ D1 3h
+UC-12CRUD địa chỉ giao hàng + set default🅲 P0 ✅ D1 3h
+UC-38Admin quản lý user (list, lock/unlock, đổi role)🅰P1 ✅ D3 4h
+Tổng effort: 10h
+UC
+ID Use Case Dev Priority Status Day Effort
+UC-
+26 CRUD Category (hỗ trợ parent-child) 🅰P0 ✅ D1 3h
+UC-
+27 CRUD Brand 🅰P0 ✅ D1 2h
+UC-
+28 CRUD Size, Color 🅰P1 ✅ D1 2h
+UC-
+29
+CRUD Product (multi-image upload, primary
+image) 🅰P0 ✅ D1 7h
+F2. USER PROFILE & ADDRESS
+F3. CATALOG MANAGEMENT (Admin/Staff)
+6/4/26, 6:28 PM ShoeStore-FeatureUC-Breakdown.md
+file:///C:/Users/GIGABY~1/AppData/Local/Temp/omv-pdf-2pzIS3/ShoeStore-FeatureUC-Breakdown.print.html 2/10
+
+=== PAGE 3 ===
+UC
+ID Use Case Dev Priority Status Day Effort
+UC-
+30 CRUD Variant + cập nhật stock per SKU🅱P0 ✅ D1 6h
+Tổng effort: 20h
+Note: UC-30 do Dev B làm vì cần variant để xử lý Cart - Dev B sẽ "thuê" lại sau khi Dev A xong
+Product structure.
+UC
+ID Use Case Dev Priority Status Day Effort
+UC-
+01 Trang chủ (banner, featured, categories)🅱P0 ✅ D1 2h
+UC-
+02
+List sản phẩm + filter
+(brand/category/giá/gender) + sort + paging🅱P0 ✅ D1 4h
+UC-
+03 Tìm kiếm theo keyword 🅰P1 ✅ D2 3h
+UC-
+04
+Chi tiết sản phẩm (slider ảnh, chọn size/màu,
+check stock variant) 🅱P0 ✅ D1 4h
+Tổng effort: 13h
+UC ID Use Case Dev Priority Status Day Effort
+UC-
+13
+Add giỏ hàng (chọn variant + qty + check
+stock) 🅱P0 ✅ D1 3h
+UC-
+14 Xem/sửa qty/xóa item trong cart + tính tổng🅱P0 ✅ D1 3h
+F4. PRODUCT BROWSE (Guest/Customer)
+F5. SHOPPING CART & WISHLIST
+6/4/26, 6:28 PM ShoeStore-FeatureUC-Breakdown.md
+file:///C:/Users/GIGABY~1/AppData/Local/Temp/omv-pdf-2pzIS3/ShoeStore-FeatureUC-Breakdown.print.html 3/10
+
+=== PAGE 4 ===
+UC ID Use Case Dev Priority Status Day Effort
+UC-
+15 Wishlist (add/remove + trang wishlist)🅰P2 🟡 D2 3h
+Tổng effort: 9h
+UC ID Use Case Dev Priority Status Day Effort
+UC-
+36 Admin quản lý voucher (CRUD + điều kiện)🅰P1 ✅ D2 4h
+UC-
+16
+Customer apply voucher khi checkout
+(validate) 🅱P1 ✅ D2 2h
+Tổng effort: 6h
+UC
+ID Use Case Dev Priority Status Day Effort
+UC-
+17
+Checkout flow (3 bước: address →
+review+voucher → payment) 🅱P0 ✅ D2 7h
+UC-
+21
+Customer hủy đơn (chỉ khi Pending/Confirmed)
++ rollback stock 🅱P1 ✅ D2 3h
+Tổng effort: 10h
+⚠  UC-17 là task khó nhất của Dev B - liên quan transaction, voucher, snapshot data.
+F6. VOUCHER
+F7. ORDER PLACEMENT (Customer)
+F8. PAYMENT (PayOS)
+6/4/26, 6:28 PM ShoeStore-FeatureUC-Breakdown.md
+file:///C:/Users/GIGABY~1/AppData/Local/Temp/omv-pdf-2pzIS3/ShoeStore-FeatureUC-Breakdown.print.html 4/10
+
+=== PAGE 5 ===
+UC
+ID Use Case Dev Priority Status Day Effort
+UC-
+46
+Atomic stock decrement khi đặt đơn
+(transaction + ROWLOCK) 🅱P0 ✅ D2 2h
+UC-
+18 Tạo PayOS payment link + redirect customer🅲 P0 ✅ D1-
+D2 4h
+UC-
+43
+Webhook callback từ PayOS (verify signature,
+update PaymentStatus) 🅲 P0 ✅ D2 4h
+- Return URL + Cancel URL handler 🅲 P0 ✅ D2 2h
+- Idempotent payment update (handle webhook
+retry) 🅲 P0 ✅ D2 1h
+Tổng effort: 13h
+⚠  Bottleneck của project. Nếu PayOS chưa thông cuối D2, plan B = mock payment success.
+UC
+ID Use Case Dev Priority Status Day Effort
+UC-
+19
+Lịch sử đơn (filter theo status, tab Tất cả/Chờ/
+Đang giao/...) 🅱P0 ✅ D2 3h
+UC-
+20 Chi tiết đơn + timeline trạng thái 🅱P0 ✅ D2 3h
+UC-
+22 Hiển thị tracking number + link bên thứ 3🅱P1 ✅ D2 1h
+Tổng effort: 7h
+F9. ORDER TRACKING (Customer)
+F10. ORDER MANAGEMENT (Staff)
+6/4/26, 6:28 PM ShoeStore-FeatureUC-Breakdown.md
+file:///C:/Users/GIGABY~1/AppData/Local/Temp/omv-pdf-2pzIS3/ShoeStore-FeatureUC-Breakdown.print.html 5/10
+
+=== PAGE 6 ===
+UC
+ID Use Case Dev Priority Status Day Effort
+UC-
+25
+Admin dashboard access + sidebar riêng cho
+Staff/Admin 🅲 P0 ✅ D1 1h
+UC-
+31
+List đơn cho staff (filter status, search mã
+đơn/SĐT) 🅲 P0 ✅ D2 3h
+UC-
+32
+Xem chi tiết đơn + xác nhận đơn (Pending →
+Confirmed) 🅲 P0 ✅ D2 3h
+UC-
+33
+Update status flow (Confirmed → Preparing →
+Shipping → Delivered) 🅲 P0 ✅ D2 3h
+UC-
+34
+Nhập tracking number (carrier + tracking code)
+khi chuyển Shipping 🅲 P0 ✅ D2 2h
+UC-
+35 Staff hủy đơn (với lý do) + rollback stock🅲 P1 ✅ D2 2h
+Tổng effort: 14h
+UC
+ID Use Case Dev Priority Status Day Effort
+UC-
+23
+Customer đánh giá (chỉ sau khi Delivered +
+verified purchase) 🅱P1 ✅ D3 5h
+UC-
+37 Staff/Admin duyệt/ẩn review 🅰P2 🟡 D3 2h
+Tổng effort: 7h
+F11. REVIEW & RATING
+F12. NOTIFICATION (in-app)
+6/4/26, 6:28 PM ShoeStore-FeatureUC-Breakdown.md
+file:///C:/Users/GIGABY~1/AppData/Local/Temp/omv-pdf-2pzIS3/ShoeStore-FeatureUC-Breakdown.print.html 6/10
+
+=== PAGE 7 ===
+UC
+ID Use Case Dev Priority Status Day Effort
+UC-
+24
+Bell icon + dropdown thông báo + đánh dấu
+đã đọc 🅱P2 🟡 D3 3h
+- Auto-tạo notification khi đơn đổi status🅱P2 🟡 D3 1h
+Tổng effort: 4h
+UC
+ID Use Case Dev Priority Status Day Effort
+UC-
+44
+SMTP setup (Gmail app password) + template
+engine 🅲 P2 🟡 D2 2h
+- Email xác nhận đơn hàng đặt thành công🅲 P2 🟡 D2 1h
+- Email xác nhận thanh toán thành công🅲 P2 🟡 D2 1h
+Tổng effort: 4h
+UC
+ID Use Case Dev Priority Status Day Effort
+UC-
+39
+Dashboard: doanh thu hôm nay/tuần/tháng, số
+đơn, biểu đồ 🅰P1 ✅ D3 7h
+UC-
+40 Báo cáo top sản phẩm bán chạy 🅰P2 🟡 D3 2h
+UC-
+41 Báo cáo doanh thu theo brand/category🅰P2 🟡 D3 2h
+UC-
+42 Export CSV (Excel/PDF là stretch) 🅰P3 ⚪ D3 2h
+F13. EMAIL SERVICE
+F14. DASHBOARD & REPORTS (Admin)
+6/4/26, 6:28 PM ShoeStore-FeatureUC-Breakdown.md
+file:///C:/Users/GIGABY~1/AppData/Local/Temp/omv-pdf-2pzIS3/ShoeStore-FeatureUC-Breakdown.print.html 7/10
+
+=== PAGE 8 ===
+Tổng effort: 13h
+UC
+ID Use Case Dev Priority Status Day Effort
+UC-
+45
+Auto-cancel đơn Pending quá 30 phút không
+TT + rollback stock 🅲 P2 🟡 D3 3h
+Tổng effort: 3h
+Task Use
+Case Dev Priority Status Day Effort
+Project setup, EF scaffold, common
+DTO/middleware - 🅰🅱 🅲 P0 ✅ D1 3h (mỗi
+người 1h)
+Git workflow, branch protection,
+README - 🅲 P0 ✅ D1 2h
+Exception handler, logging
+(Serilog), Swagger - 🅲 P0 ✅ D1 2h
+Image upload service
+(Cloudinary/local) - 🅰 P0 ✅ D1 2h
+Deploy API lên production
+(Railway/Azure) - 🅲 P0 ✅ D3 3h
+Deploy MVC frontend - 🅲 P0 ✅ D3 2h
+Deploy SQL DB + migration + seed- 🅲 P0 ✅ D3 2h
+PayOS production config +
+webhook URL - 🅲 P0 ✅ D3 2h
+Smoke test + final bug fix - 🅰🅱 🅲 P0 ✅ D3 4h (mỗi
+người)
+F15. BACKGROUND JOBS
+F16. DEVOPS & INFRASTRUCTURE
+6/4/26, 6:28 PM ShoeStore-FeatureUC-Breakdown.md
+file:///C:/Users/GIGABY~1/AppData/Local/Temp/omv-pdf-2pzIS3/ShoeStore-FeatureUC-Breakdown.print.html 8/10
+
+=== PAGE 9 ===
+Task Use
+Case Dev Priority Status Day Effort
+Documentation + Swagger - 🅲 P0 ✅ D3 2h
+Seed data đẹp cho demo (30-50
+products) - 🅰 P0 ✅ D3 3h
+Slide demo + script - 🅰🅱 🅲 P0 ✅ D3 3h (mỗi
+người 1h)
+Tổng effort: ~26h (chia ra cả team)
+Dev Features sở hữu Tổng
+effort
+🅰
+Dev
+A
+F1 (Auth backend), F3 (Catalog mgmt), F4 phần Search, F5 (Wishlist), F6
+(Voucher admin), F11 (Moderate), F14 (Dashboard), F2 (User mgmt), F16 (Seed
+data, Image upload)
+~72h
+🅱
+Dev
+B
+F1 (Forgot pwd, Email verify, Đổi pwd), F3 (Variant + stock), F4 (Home, List,
+Detail), F5 (Cart), F6 (Apply voucher), F7 (Checkout, Cancel), F8 (UC-46 atomic
+stock), F9 (Order tracking), F11 (Customer review), F12 (Notification)
+~72h
+🅲
+Dev
+C
+F2 (Profile, Address), F8 (PayOS), F10 (Staff order mgmt), F13 (Email), F15
+(Background job), F16 (DevOps, Deploy, Docs) ~72h
+F1 Auth ──────┬──> F3 Catalog (cần role check)
+              ├──> F5 Cart (cần userId)
+              └──> F7 Order (cần userId)
+F3 Catalog ──> F4 Browse ──> F5 Cart ──> F7 Order ──┬──> F8 Payment ──> F10 Staff
+                                                     └──> F9 Tracking
+TỔNG KẾT WORKLOAD CÂN BẰNG
+PHỤ THUỘC GIỮA FEATURES (Dependency)
+6/4/26, 6:28 PM ShoeStore-FeatureUC-Breakdown.md
+file:///C:/Users/GIGABY~1/AppData/Local/Temp/omv-pdf-2pzIS3/ShoeStore-FeatureUC-Breakdown.print.html 9/10
+
+=== PAGE 10 ===
+F7 Order ──> F11 Review (chỉ review nếu đã mua)
+F10 Staff ──> F12 Notification (khi đổi status)
+F8 Payment ──> F13 Email (xác nhận TT thành công)
+F8 + F10 ──> F14 Dashboard (cần data đơn hàng)
+1. Dev A phải xong Product structure (D1 sáng) → Dev B mới làm Variant + Cart
+2. Dev B phải xong Order create API (D2 sáng) → Dev C mới integrate PayOS
+3. PayOS phải thông (D2 cuối ngày) → Dev B mới demo được full flow
+Một feature tính là DONE khi cả 4 mục:
+ API hoàn thành + có Swagger doc
+ UI hoàn thành + wire-up với API
+ Test happy path + 1 edge case
+ Người dev khác trong team test thử và OK
+Nếu cuối D1 chưa xong F3+F5:
+Cắt UC-15 Wishlist (Dev A)
+Cắt UC-28 (Size/Color UI - hard-code seed data)
+Nếu cuối D2 chưa xong F8 Payment:
+Mock payment success (trả về Paid ngay không cần PayOS)
+Document rõ "Mock for demo"
+Nếu D3 không kịp:
+Cắt theo thứ tự ưu tiên ngược: UC-42 (Export) → UC-08 (Email verify) → UC-40,41 (Báo cáo
+nâng cao) → UC-45 (Background job) → UC-37 (Moderate review)
+Điểm chặn chính
+CHECKLIST DONE PER FEATURE
+ĐIỀU CHỈNH NẾU CHẬM
+6/4/26, 6:28 PM ShoeStore-FeatureUC-Breakdown.md
+file:///C:/Users/GIGABY~1/AppData/Local/Temp/omv-pdf-2pzIS3/ShoeStore-FeatureUC-Breakdown.print.html 10/10
+

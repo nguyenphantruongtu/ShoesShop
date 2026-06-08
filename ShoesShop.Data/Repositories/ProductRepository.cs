@@ -102,5 +102,27 @@ public class ProductRepository : IProductRepository
     }
 
     public IQueryable<Product> GetQueryable()
-        => _context.Products.AsQueryable();
+        => _context.Products.Include(p => p.ProductImages).AsQueryable();
+
+    public async Task<IEnumerable<Product>> GetFeaturedProductsAsync()
+        => await _context.Products
+            .Where(p => p.IsActive && p.IsFeatured)
+            .Include(p => p.ProductImages.Where(i => i.IsPrimary))
+            .Include(p => p.Brand)
+            .OrderByDescending(p => p.CreatedAt)
+            .Take(12)
+            .ToListAsync();
+
+    public async Task<IEnumerable<Product>> SearchProductsAsync(string keyword)
+    {
+        var kw = keyword.ToLower();
+        return await _context.Products
+            .Where(p => p.IsActive &&
+                (p.ProductName.ToLower().Contains(kw) || p.Slug.ToLower().Contains(kw)))
+            .Include(p => p.ProductImages.Where(i => i.IsPrimary))
+            .Include(p => p.Brand)
+            .OrderByDescending(p => p.ViewCount)
+            .Take(20)
+            .ToListAsync();
+    }
 }
