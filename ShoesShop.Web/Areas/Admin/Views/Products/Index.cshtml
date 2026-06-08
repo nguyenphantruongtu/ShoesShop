@@ -1,0 +1,138 @@
+@using System.Text.Json
+@model JsonElement?
+@{ ViewData["Title"] = "Sản phẩm"; }
+
+@{
+    JsonElement? categories = ViewBag.Categories is JsonElement ce ? ce : (JsonElement?)null;
+    JsonElement? brands     = ViewBag.Brands     is JsonElement be ? be : (JsonElement?)null;
+    int page = ViewBag.Page ?? 1;
+
+    void RenderCatOpts(JsonElement? el) {
+        if (el is not JsonElement arr || arr.ValueKind != JsonValueKind.Array) return;
+        void Walk(JsonElement c) {
+            var cid   = c.GetProperty("categoryId").GetInt32();
+            var cname = System.Net.WebUtility.HtmlEncode(c.GetProperty("categoryName").GetString() ?? "");
+            var sel   = ViewBag.CategoryId?.ToString() == cid.ToString() ? " selected=\"selected\"" : "";
+            WriteLiteral($"<option value=\"{cid}\"{sel}>{cname}</option>");
+            if (c.TryGetProperty("children", out var ch) && ch.ValueKind == JsonValueKind.Array)
+                foreach (var cc in ch.EnumerateArray()) Walk(cc);
+        }
+        foreach (var c in arr.EnumerateArray()) Walk(c);
+    }
+}
+
+<div class="page-header d-flex justify-content-between align-items-center">
+    <div><h3><i class="bi bi-box-seam me-2 text-primary"></i>Sản phẩm</h3><p>Quản lý danh sách sản phẩm</p></div>
+    <a asp-action="Create" class="btn btn-primary rounded-3 px-4"><i class="bi bi-plus-lg me-1"></i>Thêm sản phẩm</a>
+</div>
+
+@* Filters *@
+<form method="get" class="card border-0 shadow-sm rounded-4 p-3 mb-4">
+    <div class="row g-2 align-items-end">
+        <div class="col-md-4">
+            <input type="text" name="search" class="form-control rounded-3" placeholder="Tìm tên sản phẩm..." value="@ViewBag.Search" />
+        </div>
+        <div class="col-md-2">
+            <select name="categoryId" class="form-select rounded-3">
+                <option value="">Tất cả danh mục</option>
+                @{ RenderCatOpts(categories); }
+            </select>
+        </div>
+        <div class="col-md-2">
+            <select name="brandId" class="form-select rounded-3">
+                <option value="">Tất cả thương hiệu</option>
+                @if (brands is JsonElement barr && barr.ValueKind == JsonValueKind.Array)
+                    foreach (var b in barr.EnumerateArray())
+                    {
+                        <option value="@b.GetProperty("brandId").GetInt32()" selected="@(ViewBag.BrandId?.ToString() == b.GetProperty("brandId").GetInt32().ToString())">@b.GetProperty("brandName").GetString()</option>
+                    }
+            </select>
+        </div>
+        <div class="col-md-2">
+            <select name="isActive" class="form-select rounded-3">
+                <option value="">Tất cả trạng thái</option>
+                <option value="true"  selected="@(ViewBag.IsActive?.ToString() == "True")">Đang bán</option>
+                <option value="false" selected="@(ViewBag.IsActive?.ToString() == "False")">Đã ẩn</option>
+            </select>
+        </div>
+        <div class="col-md-2 d-flex gap-2">
+            <button type="submit" class="btn btn-primary rounded-3 flex-grow-1"><i class="bi bi-search me-1"></i>Lọc</button>
+            <a href="/Admin/Products" class="btn btn-outline-secondary rounded-3"><i class="bi bi-x-lg"></i></a>
+        </div>
+    </div>
+</form>
+
+@if (Model is JsonElement data && data.ValueKind != JsonValueKind.Undefined)
+{
+    var products   = data.GetProperty("products");
+    var total      = data.GetProperty("totalCount").GetInt32();
+    var totalPages = data.GetProperty("totalPages").GetInt32();
+
+    <div class="card border-0 shadow-sm rounded-4">
+      <div class="card-body p-0">
+        <div class="px-4 py-3 border-bottom d-flex justify-content-between align-items-center">
+            <span class="text-muted small">Tổng <strong>@total</strong> sản phẩm</span>
+        </div>
+        <table class="table admin-table mb-0">
+          <thead><tr>
+            <th class="ps-4">Ảnh</th><th>Tên sản phẩm</th><th>Danh mục</th><th>Thương hiệu</th><th>Giá</th><th>Nổi bật</th><th>Trạng thái</th><th class="text-end pe-4">Thao tác</th>
+          </tr></thead>
+          <tbody>
+          @if (products.ValueKind == JsonValueKind.Array)
+              foreach (var p in products.EnumerateArray())
+              {
+                  var pid    = p.GetProperty("productId").GetInt32();
+                  var name   = p.GetProperty("productName").GetString();
+                  var cat    = p.GetProperty("categoryName").GetString();
+                  var brand  = p.GetProperty("brandName").GetString();
+                  var price  = p.GetProperty("basePrice").GetDecimal();
+                  var sale   = p.TryGetProperty("salePrice", out var sp) && sp.ValueKind != JsonValueKind.Null ? (decimal?)sp.GetDecimal() : null;
+                  var feat   = p.GetProperty("isFeatured").GetBoolean();
+                  var active = p.GetProperty("isActive").GetBoolean();
+                  var img    = p.TryGetProperty("primaryImageUrl", out var im) && im.ValueKind != JsonValueKind.Null ? im.GetString() : null;
+                  <tr>
+                    <td class="ps-4">
+                      @if (!string.IsNullOrEmpty(img)){<img src="@img" width="48" height="48" class="rounded-2" style="object-fit:cover" />}
+                      else{<div class="bg-light rounded-2 d-flex align-items-center justify-content-center" style="width:48px;height:48px"><i class="bi bi-image text-muted"></i></div>}
+                    </td>
+                    <td class="fw-medium" style="max-width:200px"><div class="text-truncate">@name</div></td>
+                    <td class="text-muted small">@cat</td>
+                    <td class="text-muted small">@brand</td>
+                    <td>
+                      @if (sale.HasValue){<div class="text-danger fw-bold small">@sale.Value.ToString("N0")₫</div><div class="text-muted text-decoration-line-through small">@price.ToString("N0")₫</div>}
+                      else{<span class="fw-bold small">@price.ToString("N0")₫</span>}
+                    </td>
+                    <td>@if(feat){<i class="bi bi-star-fill text-warning"></i>}else{<i class="bi bi-star text-muted"></i>}</td>
+                    <td>@if(active){<span class="badge bg-success rounded-pill px-3">Đang bán</span>}else{<span class="badge bg-secondary rounded-pill px-3">Đã ẩn</span>}</td>
+                    <td class="text-end pe-4">
+                      <a asp-action="Edit" asp-route-id="@pid" class="btn btn-sm btn-outline-primary rounded-3 me-1"><i class="bi bi-pencil"></i></a>
+                      <form asp-action="Delete" asp-route-id="@pid" method="post" class="d-inline" onsubmit="return confirm('Xóa sản phẩm này?')">
+                        @Html.AntiForgeryToken()
+                        <button type="submit" class="btn btn-sm btn-outline-danger rounded-3"><i class="bi bi-trash"></i></button>
+                      </form>
+                    </td>
+                  </tr>
+              }
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    @* Pagination *@
+    @if (totalPages > 1)
+    {
+        <nav class="mt-4 d-flex justify-content-center">
+          <ul class="pagination">
+            @for (int i = 1; i <= totalPages; i++)
+            {
+                <li class="page-item @(i == page ? "active" : "")">
+                    <a class="page-link rounded-3 mx-1" asp-action="Index"
+                       asp-route-search="@ViewBag.Search" asp-route-categoryId="@ViewBag.CategoryId"
+                       asp-route-brandId="@ViewBag.BrandId" asp-route-isActive="@ViewBag.IsActive"
+                       asp-route-page="@i">@i</a>
+                </li>
+            }
+          </ul>
+        </nav>
+    }
+}

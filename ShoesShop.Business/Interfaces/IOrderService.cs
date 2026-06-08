@@ -17,4 +17,10 @@ public interface IOrderService
 
     /// <summary>UC-35: Hủy đơn (với lý do) + rollback stock về variant</summary>
     Task<OrderDetailResponse> CancelOrderAsync(int orderId, CancelOrderRequest request, int staffId);
+
+    /// <summary>UC-19: Lịch sử đơn hàng của customer</summary>
+    Task<OrderListResponse> GetMyOrdersAsync(int userId, string? status, int page, int pageSize);
+
+    /// <summary>UC-20 + UC-22: Chi tiết đơn hàng của customer (kèm timeline + tracking)</summary>
+    Task<OrderDetailResponse> GetMyOrderDetailAsync(int orderId, int userId);
 }

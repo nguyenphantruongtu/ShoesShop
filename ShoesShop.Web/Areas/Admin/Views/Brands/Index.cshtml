@@ -1,0 +1,94 @@
+@using System.Text.Json
+@model JsonElement?
+@{ ViewData["Title"] = "Thương hiệu"; }
+
+<div class="page-header d-flex justify-content-between align-items-center">
+    <div><h3><i class="bi bi-bookmark-star me-2 text-primary"></i>Thương hiệu</h3><p>Quản lý các thương hiệu giày</p></div>
+    <button class="btn btn-primary rounded-3 px-4" data-bs-toggle="modal" data-bs-target="#brandModal" onclick="openModal(0)">
+        <i class="bi bi-plus-lg me-1"></i>Thêm thương hiệu
+    </button>
+</div>
+
+<div class="card border-0 shadow-sm rounded-4">
+  <div class="card-body p-0">
+    <table class="table admin-table mb-0">
+      <thead><tr>
+        <th class="ps-4">Logo</th><th>Tên thương hiệu</th><th>Mô tả</th><th>Trạng thái</th><th class="text-end pe-4">Thao tác</th>
+      </tr></thead>
+      <tbody>
+      @if (Model is JsonElement el && el.ValueKind == JsonValueKind.Array)
+      {
+          foreach (var b in el.EnumerateArray())
+          {
+              var id     = b.GetProperty("brandId").GetInt32();
+              var name   = b.GetProperty("brandName").GetString();
+              var logo   = b.TryGetProperty("logoUrl",    out var l) && l.ValueKind != JsonValueKind.Null ? l.GetString() : null;
+              var desc   = b.TryGetProperty("description",out var d) && d.ValueKind != JsonValueKind.Null ? d.GetString() : null;
+              var active = b.GetProperty("isActive").GetBoolean();
+              <tr>
+                <td class="ps-4">
+                  @if (!string.IsNullOrEmpty(logo)){<img src="@logo" width="40" height="40" class="rounded-2" style="object-fit:contain" />}
+                  else{<div class="bg-light rounded-2 d-flex align-items-center justify-content-center" style="width:40px;height:40px"><i class="bi bi-image text-muted"></i></div>}
+                </td>
+                <td class="fw-medium">@name</td>
+                <td class="text-muted small" style="max-width:220px">@(desc?.Length > 60 ? desc[..60]+"…" : desc ?? "—")</td>
+                <td>@if(active){<span class="badge bg-success rounded-pill px-3">Hiển thị</span>}else{<span class="badge bg-secondary rounded-pill px-3">Ẩn</span>}</td>
+                <td class="text-end pe-4">
+                  <button class="btn btn-sm btn-outline-primary rounded-3 me-1"
+                          onclick="openModal(@id,'@name?.Replace("'","\\'")','@logo','@desc?.Replace("'","\\'")',@active.ToString().ToLower())"
+                          data-bs-toggle="modal" data-bs-target="#brandModal"><i class="bi bi-pencil"></i></button>
+                  <form asp-action="Delete" asp-route-id="@id" method="post" class="d-inline" onsubmit="return confirm('Xóa thương hiệu này?')">
+                    @Html.AntiForgeryToken()
+                    <button type="submit" class="btn btn-sm btn-outline-danger rounded-3"><i class="bi bi-trash"></i></button>
+                  </form>
+                </td>
+              </tr>
+          }
+      }
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="modal fade" id="brandModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow-lg rounded-4">
+      <div class="modal-header border-0"><h5 class="modal-title fw-bold" id="brandModalTitle">Thương hiệu</h5><button class="btn-close" data-bs-dismiss="modal"></button></div>
+      <form id="brandForm" method="post">
+        @Html.AntiForgeryToken()
+        <div class="modal-body p-4">
+          <div class="mb-3"><label class="form-label fw-semibold">Tên thương hiệu <span class="text-danger">*</span></label>
+            <input type="text" name="brandName" id="fBName" class="form-control rounded-3" required maxlength="100"></div>
+          <div class="mb-3"><label class="form-label fw-semibold">URL Logo</label>
+            <input type="url" name="logoUrl" id="fBLogo" class="form-control rounded-3" maxlength="500" oninput="document.getElementById('logoPreview').src=this.value">
+            <img id="logoPreview" src="" class="mt-2 rounded-2 d-none" width="80" height="80" style="object-fit:contain" onerror="this.classList.add('d-none')" onload="this.classList.remove('d-none')"></div>
+          <div class="mb-3"><label class="form-label fw-semibold">Mô tả</label>
+            <textarea name="description" id="fBDesc" class="form-control rounded-3" rows="2" maxlength="500"></textarea></div>
+          <div class="form-check">
+            <input type="checkbox" name="isActive" id="fBActive" value="true" class="form-check-input" checked>
+            <label class="form-check-label" for="fBActive">Hiển thị</label>
+          </div>
+        </div>
+        <div class="modal-footer border-0 justify-content-center gap-2">
+          <button type="button" class="btn btn-light rounded-3 px-4" data-bs-dismiss="modal">Hủy</button>
+          <button type="submit" class="btn btn-primary rounded-3 px-4">Lưu</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+@section Scripts {
+<script>
+function openModal(id, name='', logo='', desc='', active=true) {
+    document.getElementById('brandModalTitle').textContent = id ? 'Sửa thương hiệu' : 'Thêm thương hiệu';
+    document.getElementById('brandForm').action = id ? `/Admin/Brands/Edit/${id}` : '/Admin/Brands/Create';
+    document.getElementById('fBName').value  = name;
+    document.getElementById('fBLogo').value  = logo ?? '';
+    document.getElementById('fBDesc').value  = desc ?? '';
+    document.getElementById('fBActive').checked = active;
+    const p = document.getElementById('logoPreview');
+    if (logo) { p.src = logo; p.classList.remove('d-none'); } else p.classList.add('d-none');
+}
+</script>
+}

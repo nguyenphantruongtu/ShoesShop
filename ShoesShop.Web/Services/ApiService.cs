@@ -64,10 +64,13 @@ public class ApiService
         return (result, response.StatusCode);
     }
 
-    public async Task<(ApiResponse<T>? result, System.Net.HttpStatusCode statusCode)> PatchAsync<T>(string endpoint)
+    public async Task<(ApiResponse<T>? result, System.Net.HttpStatusCode statusCode)> PatchAsync<T>(string endpoint, object? body = null)
     {
         var client = CreateAuthenticatedClient();
-        var response = await client.PatchAsync($"{_baseUrl}{endpoint}", null);
+        HttpContent? content = body != null
+            ? new StringContent(JsonSerializer.Serialize(body), Encoding.UTF8, "application/json")
+            : null;
+        var response = await client.PatchAsync($"{_baseUrl}{endpoint}", content);
         var json = await response.Content.ReadAsStringAsync();
         var result = JsonSerializer.Deserialize<ApiResponse<T>>(json, _jsonOptions);
         return (result, response.StatusCode);

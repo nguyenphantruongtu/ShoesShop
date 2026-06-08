@@ -54,9 +54,20 @@ public class Program
         builder.Services.AddScoped<ISizeColorService, SizeColorService>();
         builder.Services.AddScoped<IProductVariantService, ProductVariantService>();
 
-        // F10 – Order Management (Staff)
+        // F9 + F10 – Order (Customer Tracking + Staff Management)
         builder.Services.AddScoped<IOrderRepository, OrderRepository>();
         builder.Services.AddScoped<IOrderService, OrderService>();
+
+        // F6 – Voucher
+        builder.Services.AddScoped<IVoucherRepository, VoucherRepository>();
+        builder.Services.AddScoped<IVoucherService, VoucherService>();
+
+        // F11 – Review & Rating
+        builder.Services.AddScoped<IReviewRepository, ReviewRepository>();
+        builder.Services.AddScoped<IReviewService, ReviewService>();
+
+        // F14 – Dashboard
+        builder.Services.AddScoped<IDashboardService, DashboardService>();
 
         // ── AutoMapper ───────────────────────────────────────────────────
         builder.Services.AddAutoMapper(cfg =>

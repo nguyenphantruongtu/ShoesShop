@@ -62,6 +62,14 @@
                                             <i class="bi bi-person-circle me-2"></i>Tài khoản của tôi
                                         </a>
                                     </li>
+                                    @if (User.IsInRole("Customer"))
+                                    {
+                                        <li>
+                                            <a class="dropdown-item" asp-controller="Orders" asp-action="Index">
+                                                <i class="bi bi-bag-check me-2"></i>Đơn hàng của tôi
+                                            </a>
+                                        </li>
+                                    }
                                     <li><hr class="dropdown-divider" /></li>
                                     <li>
                                         <form asp-controller="Account" asp-action="Logout" method="post" id="logoutForm">

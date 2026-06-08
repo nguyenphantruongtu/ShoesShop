@@ -1,0 +1,171 @@
+@using System.Text.Json
+@model object
+
+@{
+    ViewData["Title"] = "Dashboard";
+    // Parse the dynamic dashboard data
+    JsonElement? data = Model is JsonElement je ? je : null;
+    JsonElement revenue = data?.GetProperty("revenue") ?? default;
+    JsonElement orders  = data?.GetProperty("orders")  ?? default;
+    JsonElement chart   = data?.GetProperty("revenueChart") ?? default;
+    JsonElement tops    = data?.GetProperty("topProducts")  ?? default;
+}
+
+<div class="page-header d-flex justify-content-between align-items-center">
+    <div>
+        <h3><i class="bi bi-speedometer2 me-2 text-primary"></i>Dashboard</h3>
+        <p>Tổng quan hoạt động kinh doanh</p>
+    </div>
+    <span class="text-muted small"><i class="bi bi-calendar3 me-1"></i>@DateTime.Now.ToString("dd/MM/yyyy")</span>
+</div>
+
+@if (Model == null)
+{
+    <div class="alert alert-warning rounded-3">Không thể tải dữ liệu dashboard.</div>
+}
+else
+{
+    @* ── Revenue Cards ── *@
+    <div class="row g-3 mb-4">
+        @{
+            var revenueToday    = revenue.ValueKind != JsonValueKind.Undefined ? revenue.GetProperty("today").GetDecimal()    : 0m;
+            var revenueWeek     = revenue.ValueKind != JsonValueKind.Undefined ? revenue.GetProperty("thisWeek").GetDecimal() : 0m;
+            var revenueMonth    = revenue.ValueKind != JsonValueKind.Undefined ? revenue.GetProperty("thisMonth").GetDecimal(): 0m;
+        }
+        <div class="col-sm-6 col-xl-3">
+            <div class="stat-card">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <span class="stat-label">Doanh thu hôm nay</span>
+                    <div class="stat-icon bg-primary bg-opacity-10 text-primary"><i class="bi bi-currency-exchange"></i></div>
+                </div>
+                <div class="stat-value">@revenueToday.ToString("N0") ₫</div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-xl-3">
+            <div class="stat-card">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <span class="stat-label">Tuần này</span>
+                    <div class="stat-icon bg-info bg-opacity-10 text-info"><i class="bi bi-graph-up"></i></div>
+                </div>
+                <div class="stat-value">@revenueWeek.ToString("N0") ₫</div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-xl-3">
+            <div class="stat-card">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <span class="stat-label">Tháng này</span>
+                    <div class="stat-icon bg-success bg-opacity-10 text-success"><i class="bi bi-calendar-check"></i></div>
+                </div>
+                <div class="stat-value">@revenueMonth.ToString("N0") ₫</div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-xl-3">
+            <div class="stat-card">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <span class="stat-label">Tổng đơn hàng</span>
+                    <div class="stat-icon bg-warning bg-opacity-10 text-warning"><i class="bi bi-receipt"></i></div>
+                </div>
+                <div class="stat-value">@(orders.ValueKind != JsonValueKind.Undefined ? orders.GetProperty("totalOrders").GetInt32() : 0)</div>
+            </div>
+        </div>
+    </div>
+
+    @* ── Order Status Row ── *@
+    <div class="row g-3 mb-4">
+        @{
+            var statuses = new[] {
+                ("Chờ xác nhận","pending","bg-warning bg-opacity-10 text-warning","bi-hourglass-split"),
+                ("Đã xác nhận","confirmed","bg-primary bg-opacity-10 text-primary","bi-check-circle"),
+                ("Đang chuẩn bị","preparing","bg-info bg-opacity-10 text-info","bi-box-seam"),
+                ("Đang giao","shipping","bg-cyan bg-opacity-10 text-info","bi-truck"),
+                ("Đã giao","delivered","bg-success bg-opacity-10 text-success","bi-bag-check"),
+                ("Đã hủy","cancelled","bg-danger bg-opacity-10 text-danger","bi-x-circle"),
+            };
+        }
+        @foreach (var (label, key, cls, icon) in statuses)
+        {
+            var count = orders.ValueKind != JsonValueKind.Undefined && orders.TryGetProperty(key, out var v) ? v.GetInt32() : 0;
+            <div class="col-6 col-md-4 col-xl-2">
+                <div class="stat-card text-center p-3">
+                    <div class="@cls rounded-circle mx-auto mb-2 d-flex align-items-center justify-content-center" style="width:44px;height:44px;">
+                        <i class="bi @icon fs-5"></i>
+                    </div>
+                    <div class="fw-bold fs-5">@count</div>
+                    <div class="text-muted small">@label</div>
+                </div>
+            </div>
+        }
+    </div>
+
+    @* ── Chart + Top Products ── *@
+    <div class="row g-4">
+        <div class="col-lg-8">
+            <div class="stat-card h-100">
+                <h6 class="fw-bold mb-3"><i class="bi bi-graph-up-arrow me-2 text-primary"></i>Doanh thu 14 ngày gần nhất</h6>
+                <canvas id="revenueChart" height="90"></canvas>
+            </div>
+        </div>
+        <div class="col-lg-4">
+            <div class="stat-card h-100">
+                <h6 class="fw-bold mb-3"><i class="bi bi-trophy me-2 text-warning"></i>Top sản phẩm bán chạy</h6>
+                <div class="d-flex flex-column gap-2" id="topProductsList">
+                    @if (tops.ValueKind == JsonValueKind.Array)
+                    {
+                        var rank = 1;
+                        foreach (var p in tops.EnumerateArray())
+                        {
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="badge rounded-circle @(rank <= 3 ? "bg-warning text-dark" : "bg-light text-muted")" style="width:24px;height:24px;font-size:.7rem;">@rank</span>
+                                <div class="flex-grow-1 overflow-hidden">
+                                    <div class="small fw-medium text-truncate">@p.GetProperty("productName").GetString()</div>
+                                    <div class="text-muted" style="font-size:.72rem;">@p.GetProperty("totalSold").GetInt32() đã bán</div>
+                                </div>
+                                <span class="small fw-bold text-nowrap">@p.GetProperty("totalRevenue").GetDecimal().ToString("N0")₫</span>
+                            </div>
+                            rank++;
+                        }
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@section Scripts {
+<script>
+@if (Model != null)
+{
+    var chartData = chart.ValueKind == JsonValueKind.Array
+        ? chart.EnumerateArray().ToList()
+        : new List<JsonElement>();
+    var labels   = string.Join(",", chartData.Select(d => $"\"{d.GetProperty("date").GetString()?[..10]}\""));
+    var revenues = string.Join(",", chartData.Select(d => d.GetProperty("revenue").GetDecimal()));
+    <text>
+    const ctx = document.getElementById('revenueChart').getContext('2d');
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: [@Html.Raw(labels)],
+            datasets: [{
+                label: 'Doanh thu (₫)',
+                data: [@Html.Raw(revenues)],
+                borderColor: '#6366f1',
+                backgroundColor: 'rgba(99,102,241,.08)',
+                tension: .4,
+                fill: true,
+                pointRadius: 4,
+                pointBackgroundColor: '#6366f1'
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: { legend: { display: false } },
+            scales: {
+                y: { beginAtZero: true, ticks: { callback: v => v.toLocaleString('vi-VN') + '₫' } }
+            }
+        }
+    });
+    </text>
+}
+</script>
+}

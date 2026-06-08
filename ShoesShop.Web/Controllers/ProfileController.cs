@@ -191,4 +191,34 @@ public class ProfileController : Controller
         TempData["ActiveTab"] = "addresses";
         return RedirectToAction(nameof(Index));
     }
+
+    // ═══════════════════════════════════════════════
+    //  POST /Profile/ChangePassword
+    // ═══════════════════════════════════════════════
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> ChangePassword(string currentPassword, string newPassword, string confirmPassword)
+    {
+        if (string.IsNullOrWhiteSpace(currentPassword) || string.IsNullOrWhiteSpace(newPassword))
+        {
+            TempData["Error"] = "Vui lòng nhập đầy đủ thông tin.";
+            return RedirectToAction(nameof(Index));
+        }
+
+        if (newPassword != confirmPassword)
+        {
+            TempData["Error"] = "Mật khẩu xác nhận không khớp.";
+            return RedirectToAction(nameof(Index));
+        }
+
+        var body = new { currentPassword, newPassword };
+        var (result, _) = await _api.PatchAsync<object>("/api/users/me/change-password", body);
+
+        if (result?.Success == true)
+            TempData["Success"] = "Đổi mật khẩu thành công!";
+        else
+            TempData["Error"] = result?.Message ?? "Đổi mật khẩu thất bại.";
+
+        return RedirectToAction(nameof(Index));
+    }
 }

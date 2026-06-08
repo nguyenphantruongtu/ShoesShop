@@ -9,3 +9,6 @@ global using ShoesShop.Shared.DTOs.User;
 global using ShoesShop.Shared.DTOs.Admin;
 global using ShoesShop.Shared.DTOs.Catalog;
 global using ShoesShop.Shared.DTOs.Order;
+global using ShoesShop.Shared.DTOs.Voucher;
+global using ShoesShop.Shared.DTOs.Review;
+global using ShoesShop.Shared.DTOs.Dashboard;

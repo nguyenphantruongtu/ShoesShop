@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] — ShoesShop Admin</title>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" />
+    <link rel="stylesheet" href="~/css/admin.css" asp-append-version="true" />
+</head>
+<body class="admin-body">
+
+<div class="d-flex" style="min-height:100vh;">
+
+    @* ═══ SIDEBAR ═══ *@
+    <nav id="sidebar" class="admin-sidebar d-flex flex-column">
+        <div class="sidebar-brand">
+            <i class="bi bi-shoe-2 me-2"></i>ShoesShop
+            <span class="badge bg-warning text-dark ms-2 small">Admin</span>
+        </div>
+
+        <div class="sidebar-section-label">Tổng quan</div>
+        <a asp-area="Admin" asp-controller="Dashboard" asp-action="Index"
+           class="sidebar-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Dashboard" ? "active" : "")">
+            <i class="bi bi-speedometer2"></i><span>Dashboard</span>
+        </a>
+
+        <div class="sidebar-section-label">Quản lý danh mục</div>
+        <a asp-area="Admin" asp-controller="Categories" asp-action="Index"
+           class="sidebar-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Categories" ? "active" : "")">
+            <i class="bi bi-diagram-3"></i><span>Danh mục</span>
+        </a>
+        <a asp-area="Admin" asp-controller="Brands" asp-action="Index"
+           class="sidebar-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Brands" ? "active" : "")">
+            <i class="bi bi-bookmark-star"></i><span>Thương hiệu</span>
+        </a>
+        <a asp-area="Admin" asp-controller="SizeColor" asp-action="Index"
+           class="sidebar-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "SizeColor" ? "active" : "")">
+            <i class="bi bi-palette2"></i><span>Size & Màu sắc</span>
+        </a>
+
+        <div class="sidebar-section-label">Sản phẩm</div>
+        <a asp-area="Admin" asp-controller="Products" asp-action="Index"
+           class="sidebar-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Products" ? "active" : "")">
+            <i class="bi bi-box-seam"></i><span>Sản phẩm</span>
+        </a>
+        <a asp-area="Admin" asp-controller="Vouchers" asp-action="Index"
+           class="sidebar-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Vouchers" ? "active" : "")">
+            <i class="bi bi-ticket-perforated"></i><span>Voucher</span>
+        </a>
+
+        <div class="sidebar-section-label">Vận hành</div>
+        <a asp-area="Admin" asp-controller="Orders" asp-action="Index"
+           class="sidebar-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Orders" ? "active" : "")">
+            <i class="bi bi-receipt"></i><span>Đơn hàng</span>
+        </a>
+
+        @if (User.IsInRole("Admin"))
+        {
+            <div class="sidebar-section-label">Hệ thống</div>
+            <a asp-area="Admin" asp-controller="Users" asp-action="Index"
+               class="sidebar-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Users" ? "active" : "")">
+                <i class="bi bi-people"></i><span>Người dùng</span>
+            </a>
+        }
+
+        <div class="mt-auto p-3 border-top border-secondary">
+            <a asp-area="" asp-controller="Home" asp-action="Index" class="sidebar-link small">
+                <i class="bi bi-arrow-left-circle"></i><span>Về trang chủ</span>
+            </a>
+            <form asp-area="" asp-controller="Account" asp-action="Logout" method="post" class="mt-2">
+                @Html.AntiForgeryToken()
+                <button type="submit" class="sidebar-link w-100 text-start border-0 bg-transparent small text-danger">
+                    <i class="bi bi-box-arrow-right"></i><span>Đăng xuất</span>
+                </button>
+            </form>
+        </div>
+    </nav>
+
+    @* ═══ MAIN CONTENT ═══ *@
+    <div class="flex-grow-1 d-flex flex-column">
+        <header class="admin-topbar d-flex align-items-center justify-content-between px-4">
+            <div class="d-flex align-items-center gap-3">
+                <button class="btn btn-sm btn-outline-secondary" id="sidebarToggle">
+                    <i class="bi bi-list fs-5"></i>
+                </button>
+                <nav aria-label="breadcrumb" class="mb-0">
+                    <ol class="breadcrumb mb-0 small">
+                        <li class="breadcrumb-item"><a asp-area="Admin" asp-controller="Dashboard" asp-action="Index">Admin</a></li>
+                        @if (ViewData["Breadcrumb"] is string bc)
+                        {
+                            <li class="breadcrumb-item active">@bc</li>
+                        }
+                    </ol>
+                </nav>
+            </div>
+            <div class="d-flex align-items-center gap-3">
+                <span class="text-muted small"><i class="bi bi-person-circle me-1"></i>@User.Identity?.Name</span>
+            </div>
+        </header>
+
+        <main class="flex-grow-1 p-4" style="background:#f1f5f9; overflow-y:auto;">
+            @if (TempData["Success"] != null)
+            {
+                <div class="alert alert-success alert-dismissible fade show rounded-3 border-0 shadow-sm mb-4" role="alert">
+                    <i class="bi bi-check-circle-fill me-2"></i>@TempData["Success"]
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            }
+            @if (TempData["Error"] != null)
+            {
+                <div class="alert alert-danger alert-dismissible fade show rounded-3 border-0 shadow-sm mb-4" role="alert">
+                    <i class="bi bi-exclamation-circle-fill me-2"></i>@TempData["Error"]
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            }
+            @RenderBody()
+        </main>
+    </div>
+</div>
+
+<script src="~/lib/jquery/dist/jquery.min.js"></script>
+<script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+    document.getElementById('sidebarToggle')?.addEventListener('click', () => {
+        document.getElementById('sidebar').classList.toggle('collapsed');
+    });
+</script>
+@await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

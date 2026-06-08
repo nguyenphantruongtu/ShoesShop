@@ -1,0 +1,105 @@
+@* Partial: shared form fields for Create & Edit product *@
+@using System.Text.Json
+
+@{
+    JsonElement? categories = ViewBag.Categories is JsonElement ce ? ce : (JsonElement?)null;
+    JsonElement? brands     = ViewBag.Brands     is JsonElement be ? be : (JsonElement?)null;
+    bool isEdit = Model != null;
+    JsonElement? p = Model is JsonElement pe ? pe : (JsonElement?)null;
+
+    string V(string key, string def = "") => (p?.TryGetProperty(key, out var v) == true && v.ValueKind != JsonValueKind.Null) ? v.ToString() : def;
+    bool B(string key, bool def = false) => (p?.TryGetProperty(key, out var v) == true) ? v.GetBoolean() : def;
+
+    void CatOpts(JsonElement? el, int? selected) {
+        if (el is not JsonElement arr || arr.ValueKind != JsonValueKind.Array) return;
+        void Walk(JsonElement c) {
+            var cid   = c.GetProperty("categoryId").GetInt32();
+            var cname = System.Net.WebUtility.HtmlEncode(c.GetProperty("categoryName").GetString() ?? "");
+            var sel   = cid.ToString() == selected?.ToString() ? " selected=\"selected\"" : "";
+            WriteLiteral($"<option value=\"{cid}\"{sel}>{cname}</option>");
+            if (c.TryGetProperty("children", out var ch) && ch.ValueKind == JsonValueKind.Array)
+                foreach (var cc in ch.EnumerateArray()) Walk(cc);
+        }
+        foreach (var c in arr.EnumerateArray()) Walk(c);
+    }
+    int? selCat = p?.TryGetProperty("categoryId", out var sc) == true ? sc.GetInt32() : (int?)null;
+    int? selBrand = p?.TryGetProperty("brandId", out var sb) == true ? sb.GetInt32() : (int?)null;
+}
+
+<div class="row g-4">
+  <div class="col-lg-8">
+    <div class="card border-0 shadow-sm rounded-4 mb-4">
+      <div class="card-body p-4">
+        <h6 class="fw-bold mb-3">Thông tin cơ bản</h6>
+        <div class="mb-3"><label class="form-label fw-semibold">Tên sản phẩm <span class="text-danger">*</span></label>
+          <input type="text" name="productName" class="form-control rounded-3" required maxlength="200" value="@V("productName")"></div>
+        <div class="mb-3"><label class="form-label fw-semibold">Slug</label>
+          <input type="text" name="slug" class="form-control rounded-3" maxlength="200" value="@V("slug")" placeholder="Tự động tạo nếu để trống"></div>
+        <div class="mb-3"><label class="form-label fw-semibold">Mô tả ngắn</label>
+          <input type="text" name="shortDescription" class="form-control rounded-3" maxlength="500" value="@V("shortDescription")"></div>
+        <div class="mb-3"><label class="form-label fw-semibold">Mô tả chi tiết</label>
+          <textarea name="description" class="form-control rounded-3" rows="5">@V("description")</textarea></div>
+      </div>
+    </div>
+    <div class="card border-0 shadow-sm rounded-4">
+      <div class="card-body p-4">
+        <h6 class="fw-bold mb-3">Thông tin bổ sung</h6>
+        <div class="row g-3">
+          <div class="col-md-6"><label class="form-label fw-semibold">Giới tính</label>
+            <select name="gender" class="form-select rounded-3">
+              <option value="">— Không xác định —</option>
+              @foreach (var g in new[]{"Nam","Nữ","Unisex"})
+              { <option value="@g" selected="@(V("gender") == g)">@g</option> }
+            </select></div>
+          <div class="col-md-6"><label class="form-label fw-semibold">Chất liệu</label>
+            <input type="text" name="material" class="form-control rounded-3" maxlength="100" value="@V("material")"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-4">
+    <div class="card border-0 shadow-sm rounded-4 mb-4">
+      <div class="card-body p-4">
+        <h6 class="fw-bold mb-3">Giá bán</h6>
+        <div class="mb-3"><label class="form-label fw-semibold">Giá gốc (₫) <span class="text-danger">*</span></label>
+          <input type="number" name="basePrice" class="form-control rounded-3" required min="0" step="1000" value="@V("basePrice","0")"></div>
+        <div><label class="form-label fw-semibold">Giá sale (₫)</label>
+          <input type="number" name="salePrice" class="form-control rounded-3" min="0" step="1000" value="@V("salePrice")" placeholder="Để trống nếu không sale"></div>
+      </div>
+    </div>
+    <div class="card border-0 shadow-sm rounded-4 mb-4">
+      <div class="card-body p-4">
+        <h6 class="fw-bold mb-3">Phân loại</h6>
+        <div class="mb-3"><label class="form-label fw-semibold">Danh mục <span class="text-danger">*</span></label>
+          <select name="categoryId" class="form-select rounded-3" required>
+            <option value="">— Chọn danh mục —</option>
+            @{ CatOpts(categories, selCat); }
+          </select></div>
+        <div><label class="form-label fw-semibold">Thương hiệu <span class="text-danger">*</span></label>
+          <select name="brandId" class="form-select rounded-3" required>
+            <option value="">— Chọn thương hiệu —</option>
+            @if (brands is JsonElement barr && barr.ValueKind == JsonValueKind.Array)
+                foreach (var b in barr.EnumerateArray())
+                {
+                    var bid = b.GetProperty("brandId").GetInt32();
+                    <option value="@bid" selected="@(bid.ToString() == selBrand?.ToString())">@b.GetProperty("brandName").GetString()</option>
+                }
+          </select></div>
+      </div>
+    </div>
+    <div class="card border-0 shadow-sm rounded-4">
+      <div class="card-body p-4">
+        <h6 class="fw-bold mb-3">Hiển thị</h6>
+        <div class="form-check mb-2">
+          <input type="checkbox" name="isActive" value="true" id="chkActive" class="form-check-input" checked="@B("isActive",true)">
+          <label class="form-check-label" for="chkActive">Đang bán</label>
+        </div>
+        <div class="form-check">
+          <input type="checkbox" name="isFeatured" value="true" id="chkFeat" class="form-check-input" checked="@B("isFeatured")">
+          <label class="form-check-label" for="chkFeat"><i class="bi bi-star-fill text-warning me-1"></i>Nổi bật</label>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

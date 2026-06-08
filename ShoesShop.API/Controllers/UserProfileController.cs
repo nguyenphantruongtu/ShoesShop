@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using ShoesShop.Business.Interfaces;
+using ShoesShop.Shared.DTOs.Auth;
 using System.Security.Claims;
 
 namespace ShoesShop.API.Controllers;
@@ -50,5 +51,18 @@ public class UserProfileController : ControllerBase
         {
             return NotFound(ApiResponse<UserProfileResponse>.Fail(ex.Message));
         }
+    }
+
+    /// <summary>UC-11: Đổi mật khẩu khi đã đăng nhập</summary>
+    [HttpPatch("change-password")]
+    public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordRequest request)
+    {
+        try
+        {
+            await _profileService.ChangePasswordAsync(GetUserId(), request);
+            return Ok(ApiResponse<object>.Ok(null, "Đổi mật khẩu thành công."));
+        }
+        catch (KeyNotFoundException ex) { return NotFound(ApiResponse<object>.Fail(ex.Message)); }
+        catch (UnauthorizedAccessException ex) { return BadRequest(ApiResponse<object>.Fail(ex.Message)); }
     }
 }

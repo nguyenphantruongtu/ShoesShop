@@ -1,5 +1,6 @@
 using ShoesShop.Business.Interfaces;
 using ShoesShop.Data.Repositories.Interfaces;
+using ShoesShop.Shared.DTOs.Auth;
 
 namespace ShoesShop.Business.Services;
 
@@ -35,6 +36,20 @@ public class UserProfileService : IUserProfileService
         await _userRepository.UpdateUserAsync(user);
 
         return MapToResponse(user);
+    }
+
+    public async Task ChangePasswordAsync(int userId, ChangePasswordRequest request)
+    {
+        var user = await _userRepository.GetUserByIdAsync(userId)
+            ?? throw new KeyNotFoundException("Không tìm thấy người dùng.");
+
+        if (!BCrypt.Net.BCrypt.Verify(request.CurrentPassword, user.PasswordHash))
+            throw new UnauthorizedAccessException("Mật khẩu hiện tại không đúng.");
+
+        user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.NewPassword);
+        user.UpdatedAt = DateTime.UtcNow;
+
+        await _userRepository.UpdateUserAsync(user);
     }
 
     private static UserProfileResponse MapToResponse(Data.Entities.User user) => new()

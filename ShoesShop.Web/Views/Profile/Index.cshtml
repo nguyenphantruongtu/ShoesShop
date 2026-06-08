@@ -299,6 +299,12 @@
                             <span class="fw-medium small">@profile.CreatedAt.ToString("dd/MM/yyyy")</span>
                         </div>
                     </div>
+                    <div class="mt-3">
+                        <button class="btn btn-outline-warning w-100 rounded-3"
+                                data-bs-toggle="modal" data-bs-target="#changePasswordModal">
+                            <i class="bi bi-key me-2"></i>Đổi mật khẩu
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -488,8 +494,64 @@
 </div>
 
 
+@* ══════════════════════════════════════
+   MODAL: Đổi mật khẩu
+══════════════════════════════════════ *@
+<div class="modal fade" id="changePasswordModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg rounded-4">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title fw-bold">
+                    <i class="bi bi-key me-2 text-warning"></i>Đổi mật khẩu
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form asp-action="ChangePassword" asp-controller="Profile" method="post">
+                @Html.AntiForgeryToken()
+                <div class="modal-body p-4">
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold text-muted text-uppercase">Mật khẩu hiện tại <span class="text-danger">*</span></label>
+                        <div class="input-group">
+                            <input type="password" name="currentPassword" id="pwCurrent" class="form-control rounded-start-3" required maxlength="100" placeholder="Nhập mật khẩu hiện tại">
+                            <button type="button" class="btn btn-outline-secondary rounded-end-3" onclick="togglePw('pwCurrent')"><i class="bi bi-eye" id="pwCurrentIco"></i></button>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold text-muted text-uppercase">Mật khẩu mới <span class="text-danger">*</span></label>
+                        <div class="input-group">
+                            <input type="password" name="newPassword" id="pwNew" class="form-control rounded-start-3" required minlength="6" maxlength="100" placeholder="Tối thiểu 6 ký tự">
+                            <button type="button" class="btn btn-outline-secondary rounded-end-3" onclick="togglePw('pwNew')"><i class="bi bi-eye" id="pwNewIco"></i></button>
+                        </div>
+                    </div>
+                    <div class="mb-0">
+                        <label class="form-label small fw-semibold text-muted text-uppercase">Xác nhận mật khẩu mới <span class="text-danger">*</span></label>
+                        <div class="input-group">
+                            <input type="password" name="confirmPassword" id="pwConfirm" class="form-control rounded-start-3" required minlength="6" maxlength="100" placeholder="Nhập lại mật khẩu mới">
+                            <button type="button" class="btn btn-outline-secondary rounded-end-3" onclick="togglePw('pwConfirm')"><i class="bi bi-eye" id="pwConfirmIco"></i></button>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer border-0 pt-0 pb-4 justify-content-center gap-2">
+                    <button type="button" class="btn btn-light rounded-3 px-4" data-bs-dismiss="modal">Hủy bỏ</button>
+                    <button type="submit" class="btn btn-warning rounded-3 px-4 shadow-sm text-white">
+                        <i class="bi bi-check-lg me-1"></i>Đổi mật khẩu
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+
 @section Scripts {
 <script>
+    // ── Toggle password visibility ──
+    function togglePw(inputId) {
+        const input = document.getElementById(inputId);
+        const ico   = document.getElementById(inputId + 'Ico');
+        if (input.type === 'password') { input.type = 'text';     ico.className = 'bi bi-eye-slash'; }
+        else                           { input.type = 'password'; ico.className = 'bi bi-eye'; }
+    }
     // ── Avatar preview ──
     function updateAvatarPreview(url) {
         const img = document.getElementById('previewAvatar');

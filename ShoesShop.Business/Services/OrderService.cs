@@ -161,6 +161,39 @@ public class OrderService : IOrderService
         return MapToDetail(updated!);
     }
 
+    // ── UC-19: Customer order history ──────────────────────────────────────
+    public async Task<OrderListResponse> GetMyOrdersAsync(int userId, string? status, int page, int pageSize)
+    {
+        var (orders, total) = await _repo.GetByUserIdAsync(userId, status, page, pageSize);
+
+        return new OrderListResponse
+        {
+            Orders = orders.Select(o => new OrderListItem
+            {
+                OrderId       = o.OrderId,
+                OrderCode     = o.OrderCode,
+                CustomerName  = o.RecipientName,
+                CustomerPhone = o.RecipientPhone,
+                TotalAmount   = o.TotalAmount,
+                OrderStatus   = o.OrderStatus,
+                PaymentStatus = o.PaymentStatus,
+                ItemCount     = o.OrderItems.Count,
+                CreatedAt     = o.CreatedAt
+            }).ToList(),
+            TotalCount = total,
+            Page       = page,
+            PageSize   = pageSize
+        };
+    }
+
+    // ── UC-20 + UC-22: Customer order detail ────────────────────────────────
+    public async Task<OrderDetailResponse> GetMyOrderDetailAsync(int orderId, int userId)
+    {
+        var order = await _repo.GetByIdAndUserIdAsync(orderId, userId)
+            ?? throw new KeyNotFoundException($"Không tìm thấy đơn hàng #{orderId}.");
+        return MapToDetail(order);
+    }
+
     // ── HELPERS ─────────────────────────────────────────────────────────────
 
     private async Task HandleShipmentAsync(Order order, UpdateOrderStatusRequest req)

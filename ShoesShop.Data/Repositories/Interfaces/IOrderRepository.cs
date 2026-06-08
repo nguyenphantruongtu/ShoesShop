@@ -21,4 +21,11 @@ public interface IOrderRepository
     /// <summary>Lấy variant để rollback stock khi hủy đơn</summary>
     Task<ProductVariant?> GetVariantByIdAsync(int variantId);
     Task UpdateVariantAsync(ProductVariant variant);
+
+    // UC-19: Lịch sử đơn hàng của customer
+    Task<(List<Order> Orders, int TotalCount)> GetByUserIdAsync(
+        int userId, string? status, int page, int pageSize);
+
+    // UC-20: Chi tiết đơn của customer (kiểm tra ownership)
+    Task<Order?> GetByIdAndUserIdAsync(int orderId, int userId);
 }

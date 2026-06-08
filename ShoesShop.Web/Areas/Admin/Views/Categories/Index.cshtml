@@ -1,0 +1,130 @@
+@using System.Text.Json
+@model JsonElement?
+@{ ViewData["Title"] = "Danh mục"; }
+
+<div class="page-header d-flex justify-content-between align-items-center">
+    <div><h3><i class="bi bi-diagram-3 me-2 text-primary"></i>Danh mục sản phẩm</h3><p>Quản lý cây danh mục</p></div>
+    <button class="btn btn-primary rounded-3 px-4" data-bs-toggle="modal" data-bs-target="#catModal" onclick="openCatModal(0)">
+        <i class="bi bi-plus-lg me-1"></i>Thêm danh mục
+    </button>
+</div>
+
+<div class="card border-0 shadow-sm rounded-4">
+    <div class="card-body p-0">
+        <table class="table admin-table mb-0">
+            <thead><tr>
+                <th class="ps-4">Tên danh mục</th><th>Slug</th><th>Danh mục cha</th><th>Trạng thái</th><th class="text-end pe-4">Thao tác</th>
+            </tr></thead>
+            <tbody>
+            @if (Model is JsonElement el && el.ValueKind == JsonValueKind.Array)
+            {
+                @* DFS traversal using Stack to avoid local functions (TagHelper limitation) *@
+                var stack = new Stack<(JsonElement cat, int depth)>();
+                foreach (var rc in el.EnumerateArray().Reverse()) stack.Push((rc, 0));
+                while (stack.Count > 0)
+                {
+                    var (cat, depth) = stack.Pop();
+                    var id       = cat.GetProperty("categoryId").GetInt32();
+                    var name     = cat.GetProperty("categoryName").GetString();
+                    var slug     = cat.GetProperty("slug").GetString();
+                    var parentNm = cat.TryGetProperty("parentCategoryName", out var pn) && pn.ValueKind != JsonValueKind.Null ? pn.GetString() : "—";
+                    var active   = cat.GetProperty("isActive").GetBoolean();
+                    var imgUrl   = cat.TryGetProperty("imageUrl", out var img) && img.ValueKind != JsonValueKind.Null ? img.GetString() : null;
+                    var desc     = cat.TryGetProperty("description", out var dsc) && dsc.ValueKind != JsonValueKind.Null ? dsc.GetString() : null;
+                    var parentId = cat.TryGetProperty("parentCategoryId", out var pid) && pid.ValueKind != JsonValueKind.Null ? (int?)pid.GetInt32() : null;
+                    if (cat.TryGetProperty("children", out var children) && children.ValueKind == JsonValueKind.Array)
+                        foreach (var child in children.EnumerateArray().Reverse())
+                            stack.Push((child, depth + 1));
+                    <tr>
+                        <td class="ps-4 fw-medium" style="padding-left:@(depth * 24 + 16)px!important">
+                            @if (depth > 0){<i class="bi bi-arrow-return-right text-muted me-2"></i>}
+                            @if (!string.IsNullOrEmpty(imgUrl)){<img src="@imgUrl" width="28" height="28" class="rounded me-2" style="object-fit:cover" />}
+                            @name
+                        </td>
+                        <td><code class="small">@slug</code></td>
+                        <td class="text-muted small">@parentNm</td>
+                        <td>
+                            @if (active){<span class="badge bg-success rounded-pill px-3">Hiển thị</span>}
+                            else{<span class="badge bg-secondary rounded-pill px-3">Ẩn</span>}
+                        </td>
+                        <td class="text-end pe-4">
+                            <button class="btn btn-sm btn-outline-primary rounded-3 me-1"
+                                    onclick="openCatModal(@id,'@name?.Replace("'","\\'")', '@slug', @(parentId.HasValue ? parentId.ToString() : "null"), '@desc?.Replace("'","\\'")','@imgUrl', @active.ToString().ToLower())"
+                                    data-bs-toggle="modal" data-bs-target="#catModal">
+                                <i class="bi bi-pencil"></i>
+                            </button>
+                            <form asp-action="Delete" asp-route-id="@id" method="post" class="d-inline" onsubmit="return confirm('Xóa danh mục này?')">
+                                @Html.AntiForgeryToken()
+                                <button type="submit" class="btn btn-sm btn-outline-danger rounded-3"><i class="bi bi-trash"></i></button>
+                            </form>
+                        </td>
+                    </tr>
+                }
+            }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+@* Modal *@
+<div class="modal fade" id="catModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow-lg rounded-4">
+      <div class="modal-header border-0"><h5 class="modal-title fw-bold" id="catModalTitle">Danh mục</h5><button class="btn-close" data-bs-dismiss="modal"></button></div>
+      <form id="catForm" method="post">
+        @Html.AntiForgeryToken()
+        <div class="modal-body p-4">
+          <div class="mb-3"><label class="form-label fw-semibold">Tên danh mục <span class="text-danger">*</span></label>
+            <input type="text" name="categoryName" id="fCatName" class="form-control rounded-3" required maxlength="100"></div>
+          <div class="mb-3"><label class="form-label fw-semibold">Slug</label>
+            <input type="text" name="slug" id="fCatSlug" class="form-control rounded-3" maxlength="120"></div>
+          <div class="mb-3"><label class="form-label fw-semibold">Danh mục cha</label>
+            <select name="parentCategoryId" id="fCatParent" class="form-select rounded-3">
+              <option value="">— Không có —</option>
+              @if (Model is JsonElement el2 && el2.ValueKind == JsonValueKind.Array)
+              {
+                  @* Use WriteLiteral inside local function to avoid async/TagHelper issue with <option> *@
+                  void RenderOpt(JsonElement c) {
+                      var cid2  = c.GetProperty("categoryId").GetInt32();
+                      var cname = System.Net.WebUtility.HtmlEncode(c.GetProperty("categoryName").GetString() ?? "");
+                      WriteLiteral($"<option value=\"{cid2}\">{cname}</option>");
+                      if (c.TryGetProperty("children", out var ch) && ch.ValueKind == JsonValueKind.Array)
+                          foreach (var cc in ch.EnumerateArray()) RenderOpt(cc);
+                  }
+                  foreach (var c in el2.EnumerateArray()) RenderOpt(c);
+              }
+            </select></div>
+          <div class="mb-3"><label class="form-label fw-semibold">Mô tả</label>
+            <textarea name="description" id="fCatDesc" class="form-control rounded-3" rows="2" maxlength="500"></textarea></div>
+          <div class="mb-3"><label class="form-label fw-semibold">URL ảnh</label>
+            <input type="url" name="imageUrl" id="fCatImg" class="form-control rounded-3" maxlength="500"></div>
+          <div class="form-check">
+            <input type="checkbox" name="isActive" id="fCatActive" value="true" class="form-check-input" checked>
+            <label class="form-check-label" for="fCatActive">Hiển thị</label>
+          </div>
+        </div>
+        <div class="modal-footer border-0 justify-content-center gap-2">
+          <button type="button" class="btn btn-light rounded-3 px-4" data-bs-dismiss="modal">Hủy</button>
+          <button type="submit" class="btn btn-primary rounded-3 px-4">Lưu</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+@section Scripts {
+<script>
+function openCatModal(id, name='', slug='', parentId=null, desc='', img='', active=true) {
+    const form = document.getElementById('catForm');
+    document.getElementById('catModalTitle').textContent = id ? 'Sửa danh mục' : 'Thêm danh mục';
+    form.action = id ? `/Admin/Categories/Edit/${id}` : '/Admin/Categories/Create';
+    document.getElementById('fCatName').value   = name;
+    document.getElementById('fCatSlug').value   = slug;
+    document.getElementById('fCatDesc').value   = desc ?? '';
+    document.getElementById('fCatImg').value    = img  ?? '';
+    document.getElementById('fCatActive').checked = active;
+    const sel = document.getElementById('fCatParent');
+    sel.value = parentId ?? '';
+}
+</script>
+}

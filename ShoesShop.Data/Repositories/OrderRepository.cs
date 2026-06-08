@@ -89,4 +89,38 @@ public class OrderRepository : IOrderRepository
         _ctx.ProductVariants.Update(variant);
         await _ctx.SaveChangesAsync();
     }
+
+    // UC-19: Lịch sử đơn hàng của customer
+    public async Task<(List<Order> Orders, int TotalCount)> GetByUserIdAsync(
+        int userId, string? status, int page, int pageSize)
+    {
+        var query = _ctx.Orders
+            .Include(o => o.OrderItems)
+            .Include(o => o.Shipment)
+            .Where(o => o.UserId == userId)
+            .AsQueryable();
+
+        if (!string.IsNullOrWhiteSpace(status))
+            query = query.Where(o => o.OrderStatus == status);
+
+        var total = await query.CountAsync();
+        var orders = await query
+            .OrderByDescending(o => o.CreatedAt)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync();
+
+        return (orders, total);
+    }
+
+    // UC-20: Chi tiết đơn của customer (ownership check)
+    public async Task<Order?> GetByIdAndUserIdAsync(int orderId, int userId)
+        => await _ctx.Orders
+            .Include(o => o.User)
+            .Include(o => o.OrderItems)
+                .ThenInclude(oi => oi.Variant)
+            .Include(o => o.Shipment)
+            .Include(o => o.OrderStatusHistories.OrderBy(h => h.ChangedAt))
+                .ThenInclude(h => h.ChangedByUser)
+            .FirstOrDefaultAsync(o => o.OrderId == orderId && o.UserId == userId);
 }
