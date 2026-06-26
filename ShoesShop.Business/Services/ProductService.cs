@@ -216,44 +216,57 @@ public class ProductService : IProductService
         var p = await _repo.GetByIdWithDetailsAsync(productId);
         if (p is null) return null;
 
+        var activeVariants = p.ProductVariants.Where(v => v.IsActive).ToList();
+
         return new ProductDetailDto
         {
             ProductId        = p.ProductId,
             ProductName      = p.ProductName,
+            BrandName        = p.Brand?.BrandName,
+            CategoryName     = p.Category?.CategoryName,
             BasePrice        = p.BasePrice,
             SalePrice        = p.SalePrice,
             ShortDescription = p.ShortDescription,
             Description      = p.Description,
             Gender           = p.Gender,
+            Material         = p.Material,
+            Slug             = p.Slug,
 
             ImageUrls = p.ProductImages
                          .OrderBy(img => img.DisplayOrder)
                          .Select(img => img.ImageUrl)
                          .ToList(),
 
-            Colors = p.ProductVariants
+            Colors = activeVariants
                       .Where(v => v.Color != null)
-                      .Select(v => new ColorDto
+                      .GroupBy(v => v.ColorId)
+                      .Select(g => new ColorDto
                       {
-                          ColorId   = v.Color!.ColorId,
-                          ColorName = v.Color.ColorName,
-                          HexCode   = v.Color.HexCode
+                          ColorId   = g.First().Color!.ColorId,
+                          ColorName = g.First().Color!.ColorName,
+                          HexCode   = g.First().Color!.HexCode
                       })
-                      .GroupBy(c => c.ColorId)
-                      .Select(g => g.First())
                       .ToList(),
 
-            Sizes = p.ProductVariants
+            Sizes = activeVariants
                      .Where(v => v.Size != null)
-                     .Select(v => new SizeDto
+                     .GroupBy(v => v.SizeId)
+                     .Select(g => new SizeDto
                      {
-                         SizeId   = v.Size!.SizeId,
-                         SizeName = v.Size.SizeValue
+                         SizeId   = g.First().Size!.SizeId,
+                         SizeName = g.First().Size!.SizeValue
                      })
-                     .GroupBy(s => s.SizeId)
-                     .Select(g => g.First())
                      .OrderBy(s => s.SizeName)
-                     .ToList()
+                     .ToList(),
+
+            Variants = activeVariants.Select(v => new VariantStockDto
+            {
+                VariantId     = v.VariantId,
+                SizeId        = v.SizeId,
+                ColorId       = v.ColorId,
+                StockQuantity = v.StockQuantity,
+                IsActive      = v.IsActive
+            }).ToList()
         };
     }
 

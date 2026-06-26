@@ -1,195 +1,435 @@
-﻿@{
-	ViewData["Title"] = "Thanh toán đơn hàng";
-	Layout = "~/Views/Shared/_Layout.cshtml";
+@using System.Text.Json
+@{
+    ViewData["Title"] = "Thanh toán — STRIDEX";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+
+    var savedAddresses = ViewBag.Addresses is JsonElement addr && addr.ValueKind == JsonValueKind.Array
+        ? addr.EnumerateArray().ToList()
+        : new List<JsonElement>();
+    string jwtToken = ViewBag.JwtToken ?? "";
 }
 
-<div class="container my-5">
-	<h2 class="fw-bold mb-4 text-dark"><i class="bi bi-credit-card-2-front-fill me-2 text-primary"></i>Thanh Toán Đơn Hàng</h2>
+<div class="container-xxl px-4 py-5">
 
-	<div class="row">
-		<div class="col-lg-7 mb-4">
-			<div class="card border-0 shadow-sm rounded-4 p-4">
-				<h5 class="fw-bold text-dark mb-4 border-bottom pb-2">Thông tin nhận hàng</h5>
-				<form id="form-checkout">
-					<div class="mb-3">
-						<label class="form-label small fw-semibold text-secondary">Họ và tên người nhận <span class="text-danger">*</span></label>
-						<input type="text" id="customer-name" class="form-control bg-light border-0 py-2.5" placeholder="Ví dụ: Nguyễn Văn A" required>
-					</div>
+    <!-- Header -->
+    <div class="mb-5">
+        <span class="section-eyebrow">Đặt hàng</span>
+        <h1 class="section-title mb-0">Thanh toán</h1>
+    </div>
 
-					<div class="row">
-						<div class="col-md-6 mb-3">
-							<label class="form-label small fw-semibold text-secondary">Số điện thoại <span class="text-danger">*</span></label>
-							<input type="tel" id="customer-phone" class="form-control bg-light border-0 py-2.5" placeholder="Ví dụ: 0912345678" required>
-						</div>
-						<div class="col-md-6 mb-3">
-							<label class="form-label small fw-semibold text-secondary">Địa chỉ Email</label>
-							<input type="email" id="customer-email" class="form-control bg-light border-0 py-2.5" placeholder="name@example.com">
-						</div>
-					</div>
+    <!-- Step indicator -->
+    <div class="d-flex align-items-center gap-0 mb-5" style="max-width:420px">
+        <div class="d-flex align-items-center gap-2">
+            <div style="width:28px;height:28px;background:#000;color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:0.75rem;font-weight:800">1</div>
+            <span style="font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em">Giỏ hàng</span>
+        </div>
+        <div style="flex:1;height:1px;background:#000;margin:0 12px"></div>
+        <div class="d-flex align-items-center gap-2">
+            <div style="width:28px;height:28px;background:#000;color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:0.75rem;font-weight:800">2</div>
+            <span style="font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em">Thanh toán</span>
+        </div>
+        <div style="flex:1;height:1px;background:#ddd;margin:0 12px"></div>
+        <div class="d-flex align-items-center gap-2">
+            <div style="width:28px;height:28px;background:#ddd;color:#888;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:0.75rem;font-weight:800">3</div>
+            <span style="font-size:0.75rem;font-weight:600;text-transform:uppercase;letter-spacing:0.08em;color:#888">Hoàn tất</span>
+        </div>
+    </div>
 
-					<div class="mb-3">
-						<label class="form-label small fw-semibold text-secondary">Địa chỉ giao hàng đầy đủ <span class="text-danger">*</span></label>
-						<input type="text" id="customer-address" class="form-control bg-light border-0 py-2.5" placeholder="Số nhà, tên đường, xã/phường, quận/huyện, tỉnh..." required>
-					</div>
+    <div class="row g-5">
 
-					<div class="mb-3">
-						<label class="form-label small fw-semibold text-secondary">Ghi chú đơn hàng</label>
-						<textarea id="order-notes" class="form-control bg-light border-0" rows="3" placeholder="Ghi chú về thời gian giao hàng, chỉ dẫn đường đi..."></textarea>
-					</div>
-				</form>
-			</div>
-		</div>
+        <!-- LEFT — Form -->
+        <div class="col-lg-7">
+            <form id="checkout-form" novalidate>
 
-		<div class="col-lg-5">
-			<div class="card border-0 shadow-sm rounded-4 p-4 sticky-top" style="top: 20px;">
-				<h5 class="fw-bold text-dark mb-3 border-bottom pb-2">Đơn hàng của bạn</h5>
+                @if (savedAddresses.Any())
+                {
+                    <!-- Địa chỉ đã lưu -->
+                    <div style="border:1px solid #eee;padding:28px;margin-bottom:24px">
+                        <div class="d-flex align-items-center justify-content-between mb-3">
+                            <h3 style="font-size:0.82rem;font-weight:800;text-transform:uppercase;letter-spacing:0.12em;margin:0">
+                                Địa chỉ đã lưu
+                            </h3>
+                            <button type="button" id="btn-new-address"
+                                    onclick="showNewAddressForm()"
+                                    style="font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;
+                                           border:1px solid #000;background:none;color:#000;padding:5px 12px;cursor:pointer">
+                                <i class="bi bi-plus me-1"></i>Địa chỉ mới
+                            </button>
+                        </div>
 
-				<div id="checkout-items-preview" class="mb-4 overflow-auto" style="max-height: 280px;">
-				</div>
+                        <div id="saved-address-list" style="display:flex;flex-direction:column;gap:10px">
+                            @foreach (var a in savedAddresses)
+                            {
+                                var aid      = a.GetProperty("addressId").GetInt32();
+                                var rname    = a.GetProperty("recipientName").GetString() ?? "";
+                                var rphone   = a.GetProperty("phone").GetString() ?? "";
+                                var street   = a.GetProperty("streetAddress").GetString() ?? "";
+                                var ward     = a.TryGetProperty("ward", out var w) ? (w.GetString() ?? "") : "";
+                                var district = a.GetProperty("district").GetString() ?? "";
+                                var province = a.GetProperty("province").GetString() ?? "";
+                                var isDef    = a.GetProperty("isDefault").GetBoolean();
 
-				<div class="d-flex justify-content-between mb-2">
-					<span class="text-muted">Tạm tính:</span>
-					<span id="checkout-subtotal" class="fw-semibold text-dark">0 đ</span>
-				</div>
-				<div class="d-flex justify-content-between mb-3">
-					<span class="text-muted">Phí giao hàng:</span>
-					<span class="text-success fw-medium">Miễn phí</span>
-				</div>
+                                <div class="saved-addr-card @(isDef ? "selected" : "")"
+                                     data-id="@aid"
+                                     data-name="@rname" data-phone="@rphone"
+                                     data-street="@street" data-ward="@ward"
+                                     data-district="@district" data-province="@province"
+                                     onclick="selectAddress(this)"
+                                     style="border:@(isDef?"2px solid #000":"1px solid #eee");padding:14px 16px;cursor:pointer;
+                                            position:relative;transition:border 0.15s">
+                                    <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px">
+                                        <div>
+                                            <div style="font-weight:700;font-size:0.85rem">
+                                                @rname
+                                                @if (isDef)
+                                                {
+                                                    <span style="font-size:0.65rem;font-weight:700;background:#000;color:#fff;
+                                                                 padding:2px 6px;letter-spacing:0.06em;margin-left:8px">MẶC ĐỊNH</span>
+                                                }
+                                            </div>
+                                            <div style="font-size:0.78rem;color:#888;margin-top:2px">@rphone</div>
+                                            <div style="font-size:0.78rem;color:#555;margin-top:4px">
+                                                @street@(!string.IsNullOrEmpty(ward) ? ", " + ward : ""), @district, @province
+                                            </div>
+                                        </div>
+                                        <div class="addr-check" style="width:20px;height:20px;border-radius:50%;
+                                                    border:2px solid @(isDef?"#000":"#ccc");background:@(isDef?"#000":"#fff");
+                                                    display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px">
+                                            @if (isDef)
+                                            {
+                                                <i class="bi bi-check" style="color:#fff;font-size:0.7rem"></i>
+                                            }
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                }
 
-				<hr class="text-muted">
+                <!-- Shipping info -->
+                <div id="new-address-form" style="border:1px solid #eee;padding:28px;margin-bottom:24px;@(savedAddresses.Any() ? "display:none" : "")">
+                    <div class="d-flex align-items-center justify-content-between mb-4">
+                        <h3 style="font-size:0.82rem;font-weight:800;text-transform:uppercase;letter-spacing:0.12em;margin:0">
+                            Thông tin nhận hàng
+                        </h3>
+                        @if (savedAddresses.Any())
+                        {
+                            <button type="button" onclick="hideNewAddressForm()"
+                                    style="font-size:0.72rem;color:#888;background:none;border:none;cursor:pointer;padding:0">
+                                <i class="bi bi-arrow-left me-1"></i>Quay lại
+                            </button>
+                        }
+                    </div>
 
-				<div class="d-flex justify-content-between align-items-center mb-4">
-					<span class="fw-bold text-dark fs-5">Tổng số tiền thanh toán:</span>
-					<span id="checkout-total" class="fw-bold text-danger fs-4">0 đ</span>
-				</div>
+                    <div class="mb-3">
+                        <label class="form-label-clean">Họ và tên người nhận <span style="color:#e63946">*</span></label>
+                        <input type="text" id="recipientName" class="form-control-clean" placeholder="Nguyễn Văn A" required>
+                        <div class="invalid-feedback-clean d-none" id="err-name">Vui lòng nhập họ tên.</div>
+                    </div>
 
-				<button type="button" id="btn-submit-order" class="btn btn-primary btn-lg w-100 py-3 rounded-pill text-uppercase fw-bold shadow">
-					<i class="bi bi-check-circle-fill me-2"></i> Xác nhận đặt hàng
-				</button>
-			</div>
-		</div>
-	</div>
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label-clean">Số điện thoại <span style="color:#e63946">*</span></label>
+                            <input type="tel" id="phone" class="form-control-clean" placeholder="0912 345 678" required>
+                            <div class="invalid-feedback-clean d-none" id="err-phone">Số điện thoại không hợp lệ.</div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label-clean">Email</label>
+                            <input type="email" id="email" class="form-control-clean" placeholder="email@example.com">
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label-clean">Địa chỉ cụ thể <span style="color:#e63946">*</span></label>
+                        <input type="text" id="address" class="form-control-clean" placeholder="Số nhà, tên đường..." required>
+                        <div class="invalid-feedback-clean d-none" id="err-address">Vui lòng nhập địa chỉ.</div>
+                    </div>
+
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-4">
+                            <label class="form-label-clean">Tỉnh / Thành phố <span style="color:#e63946">*</span></label>
+                            <input type="text" id="province" class="form-control-clean" placeholder="Hồ Chí Minh" required>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label-clean">Quận / Huyện <span style="color:#e63946">*</span></label>
+                            <input type="text" id="district" class="form-control-clean" placeholder="Quận 9" required>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label-clean">Phường / Xã</label>
+                            <input type="text" id="ward" class="form-control-clean" placeholder="Phường Long Bình">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="form-label-clean">Ghi chú</label>
+                        <textarea id="note" rows="3" class="form-control-clean" placeholder="Ghi chú thêm về giờ giao, địa điểm..."></textarea>
+                    </div>
+                </div><!-- end new-address-form -->
+
+                <!-- Payment method -->
+                <div style="border:1px solid #eee;padding:28px">
+                    <h3 style="font-size:0.82rem;font-weight:800;text-transform:uppercase;letter-spacing:0.12em;margin-bottom:20px">
+                        Phương thức thanh toán
+                    </h3>
+
+                    <label style="display:flex;align-items:center;gap:12px;padding:14px 16px;border:2px solid #000;cursor:pointer;margin-bottom:10px">
+                        <input type="radio" name="payment" value="COD" checked style="margin:0;accent-color:#000">
+                        <div>
+                            <div style="font-weight:700;font-size:0.85rem">Thanh toán khi nhận hàng (COD)</div>
+                            <div style="font-size:0.75rem;color:#888">Bạn trả tiền mặt khi shipper giao hàng.</div>
+                        </div>
+                        <i class="bi bi-cash-coin ms-auto" style="font-size:1.3rem;color:#888"></i>
+                    </label>
+
+                    <label style="display:flex;align-items:center;gap:12px;padding:14px 16px;border:1px solid #eee;cursor:pointer;opacity:0.5">
+                        <input type="radio" name="payment" value="Online" disabled style="margin:0;accent-color:#000">
+                        <div>
+                            <div style="font-weight:700;font-size:0.85rem">Chuyển khoản / VNPay <span style="font-size:0.7rem;color:#888">(sắp ra mắt)</span></div>
+                            <div style="font-size:0.75rem;color:#888">Thanh toán trực tuyến qua ứng dụng ngân hàng.</div>
+                        </div>
+                        <i class="bi bi-credit-card ms-auto" style="font-size:1.3rem;color:#888"></i>
+                    </label>
+                </div>
+            </form>
+        </div>
+
+        <!-- RIGHT — Order summary -->
+        <div class="col-lg-5">
+            <div style="border:2px solid #000;padding:28px;position:sticky;top:80px">
+                <h3 style="font-size:0.82rem;font-weight:800;text-transform:uppercase;letter-spacing:0.12em;margin-bottom:20px">Đơn hàng của bạn</h3>
+
+                <!-- Items preview -->
+                <div id="checkout-items" style="max-height:260px;overflow-y:auto;margin-bottom:16px"></div>
+
+                <div class="d-flex justify-content-between mb-2 pt-2" style="border-top:1px solid #eee">
+                    <span style="font-size:0.82rem;color:#666">Tạm tính</span>
+                    <span style="font-size:0.82rem;font-weight:700" id="co-subtotal">—</span>
+                </div>
+                <div class="d-flex justify-content-between mb-3 pb-3" style="border-bottom:1px solid #eee">
+                    <span style="font-size:0.82rem;color:#666">Phí vận chuyển</span>
+                    <span style="font-size:0.82rem;font-weight:600" id="co-ship">—</span>
+                </div>
+                <div class="d-flex justify-content-between mb-4">
+                    <span style="font-size:1rem;font-weight:800;text-transform:uppercase;letter-spacing:0.04em">Tổng cộng</span>
+                    <span style="font-size:1.3rem;font-weight:900" id="co-total">—</span>
+                </div>
+
+                <button type="button" id="btn-place-order" class="add-to-cart-btn w-100" onclick="placeOrder()">
+                    <i class="bi bi-check2-circle me-2"></i>Xác nhận đặt hàng
+                </button>
+
+                <div style="font-size:0.72rem;color:#888;margin-top:12px;text-align:center">
+                    <i class="bi bi-shield-check me-1"></i>Thông tin được bảo mật tuyệt đối
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Success modal -->
+<div class="modal fade" id="successModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0" style="border-radius:0">
+            <div class="modal-body text-center p-5">
+                <div style="width:64px;height:64px;background:#000;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 20px">
+                    <i class="bi bi-check2" style="color:#fff;font-size:1.8rem"></i>
+                </div>
+                <h4 style="font-weight:900;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px">Đặt hàng thành công!</h4>
+                <p style="color:#666;font-size:0.88rem;margin-bottom:4px">Cảm ơn bạn đã mua sắm tại STRIDEX.</p>
+                <p style="color:#888;font-size:0.82rem">Mã đơn hàng: <strong id="order-id-display" style="color:#000">—</strong></p>
+                <div class="d-flex gap-3 justify-content-center mt-4">
+                    <a asp-controller="Orders" asp-action="Index" class="btn-black">Xem đơn hàng</a>
+                    <a asp-controller="Home" asp-action="Index" class="btn-white" style="border-color:#000">Về trang chủ</a>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 
 @section Scripts {
-	<script>
-		$(document).ready(function () {
+<script>
+const API_BASE = 'https://localhost:7214';
+const JWT_TOKEN = '@Html.Raw(jwtToken)';
+let cart = [];
+let usingNewAddress = @(savedAddresses.Any() ? "false" : "true");
 
-			const apiOrderUrl = 'https://localhost:7214/api/orders';
-			let cart = JSON.parse(localStorage.getItem('shoes_shop_cart')) || [];
+$(document).ready(function() {
+    cart = JSON.parse(localStorage.getItem('shoes_shop_cart')) || [];
+    if (!cart.length) { window.location.href = '/Cart'; return; }
+    renderItems();
+    renderSummary();
 
-			// Kiểm tra an toàn: Nếu giỏ hàng trống rỗng thì đá ngược người dùng về trang chủ
-			if (cart.length === 0) {
-				alert("Giỏ hàng của bạn đang trống! Vui lòng chọn sản phẩm trước khi thanh toán.");
-				window.location.href = '/';
-				return;
-			}
+    // Nếu có địa chỉ đã lưu, tự điền địa chỉ đang được chọn vào các hidden fields
+    const defaultCard = document.querySelector('.saved-addr-card.selected');
+    if (defaultCard) fillFromCard(defaultCard);
+});
 
-			// 1. Đọc và hiển thị tóm tắt danh sách giày cần mua
-			function renderCheckoutSummary() {
-				let htmlSummary = '';
-				let totalAmount = 0;
+function selectAddress(card) {
+    document.querySelectorAll('.saved-addr-card').forEach(c => {
+        c.classList.remove('selected');
+        c.style.border = '1px solid #eee';
+        c.querySelector('.addr-check').style.background = '#fff';
+        c.querySelector('.addr-check').style.borderColor = '#ccc';
+        c.querySelector('.addr-check').innerHTML = '';
+    });
+    card.classList.add('selected');
+    card.style.border = '2px solid #000';
+    card.querySelector('.addr-check').style.background = '#000';
+    card.querySelector('.addr-check').style.borderColor = '#000';
+    card.querySelector('.addr-check').innerHTML = '<i class="bi bi-check" style="color:#fff;font-size:0.7rem"></i>';
+    fillFromCard(card);
+    usingNewAddress = false;
+}
 
-				cart.forEach(item => {
-					let itemTotal = item.salePrice * item.quantity;
-					totalAmount += itemTotal;
+function fillFromCard(card) {
+    document.getElementById('recipientName').value = card.dataset.name || '';
+    document.getElementById('phone').value         = card.dataset.phone || '';
+    document.getElementById('address').value       = card.dataset.street || '';
+    document.getElementById('ward').value          = card.dataset.ward || '';
+    document.getElementById('district').value      = card.dataset.district || '';
+    document.getElementById('province').value      = card.dataset.province || '';
+}
 
-					htmlSummary += `
-						<div class="d-flex align-items-center mb-3 border-bottom border-light pb-3">
-							<img src="${item.primaryImageUrl}" class="rounded border me-3" style="width: 55px; height: 55px; object-fit: cover;" alt="giày">
-							<div class="flex-grow-1 overflow-hidden">
-								<h6 class="mb-0 fw-bold text-dark text-truncate small">${item.productName}</h6>
-								<small class="text-muted">Màu: ${item.colorName} | Size: ${item.sizeName} | SL: ${item.quantity}</small>
-							</div>
-							<div class="text-end ps-2">
-								<span class="fw-semibold text-dark small">${itemTotal.toLocaleString('vi-VN')} đ</span>
-							</div>
-						</div>`;
-				});
+function showNewAddressForm() {
+    document.getElementById('new-address-form').style.display = '';
+    ['recipientName','phone','address','ward','district','province'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.value = '';
+    });
+    document.querySelectorAll('.saved-addr-card').forEach(c => {
+        c.classList.remove('selected');
+        c.style.border = '1px solid #eee';
+        c.querySelector('.addr-check').style.background = '#fff';
+        c.querySelector('.addr-check').style.borderColor = '#ccc';
+        c.querySelector('.addr-check').innerHTML = '';
+    });
+    usingNewAddress = true;
+    document.getElementById('new-address-form').scrollIntoView({behavior:'smooth'});
+}
 
-				$('#checkout-items-preview').html(htmlSummary);
-				$('#checkout-subtotal').text(totalAmount.toLocaleString('vi-VN') + ' đ');
-				$('#checkout-total').text(totalAmount.toLocaleString('vi-VN') + ' đ');
-			}
+function hideNewAddressForm() {
+    document.getElementById('new-address-form').style.display = 'none';
+    const defaultCard = document.querySelector('.saved-addr-card') ;
+    if (defaultCard) selectAddress(defaultCard);
+    usingNewAddress = false;
+}
 
-			renderCheckoutSummary();
+function renderItems() {
+    let html = '';
+    cart.forEach(item => {
+        html += `
+        <div style="display:flex;gap:12px;align-items:center;padding:8px 0;border-bottom:1px solid #f3f3f3">
+            <img src="${item.primaryImageUrl||'https://placehold.co/48x48/f3f3f3/888?text=?'}"
+                 style="width:48px;height:48px;object-fit:cover;flex-shrink:0"
+                 onerror="this.src='https://placehold.co/48x48/f3f3f3/888?text=?'">
+            <div style="flex:1;min-width:0">
+                <div style="font-weight:700;font-size:0.8rem;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${item.productName}</div>
+                <div style="font-size:0.72rem;color:#888">${item.colorName||''} ${item.sizeName?'/ '+item.sizeName:''} × ${item.quantity}</div>
+            </div>
+            <div style="font-weight:700;font-size:0.82rem;flex-shrink:0">${(item.salePrice*item.quantity).toLocaleString('vi-VN')}₫</div>
+        </div>`;
+    });
+    document.getElementById('checkout-items').innerHTML = html;
+}
 
-			// 2. Xử lý sự kiện click nút XÁC NHẬN ĐẶT HÀNG
-			$('#btn-submit-order').click(function () {
-				// Kiểm tra tính hợp lệ của biểu mẫu (Validate form dữ liệu trống)
-				let name = $('#customer-name').val().trim();
-				let phone = $('#customer-phone').val().trim();
-				let email = $('#customer-email').val().trim();
-				let address = $('#customer-address').val().trim();
-				let notes = $('#order-notes').val().trim();
+function renderSummary() {
+    const subtotal = parseFloat(sessionStorage.getItem('cart_subtotal')) ||
+                     cart.reduce((s,i)=>s+(i.salePrice||0)*i.quantity, 0);
+    const shipping = parseFloat(sessionStorage.getItem('cart_shipping')) ||
+                     (subtotal >= 500000 ? 0 : 30000);
+    const total    = subtotal + shipping;
 
-				if (!name || !phone || !address) {
-					alert("Vui lòng điền đầy đủ các thông tin bắt buộc có dấu (*)");
-					return;
-				}
+    document.getElementById('co-subtotal').textContent = subtotal.toLocaleString('vi-VN') + '₫';
+    const shipEl = document.getElementById('co-ship');
+    shipEl.textContent = shipping === 0 ? 'Miễn phí' : shipping.toLocaleString('vi-VN') + '₫';
+    shipEl.style.color = shipping === 0 ? '#2d6a4f' : '#000';
+    document.getElementById('co-total').textContent = total.toLocaleString('vi-VN') + '₫';
+}
 
-				// Khóa nút bấm lại tránh người dùng bấm liên tục tạo đơn trùng lắp
-				$(this).prop('disabled', true).html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Đang xử lý đơn hàng...');
+function placeOrder() {
+    // Validate
+    const name    = document.getElementById('recipientName').value.trim();
+    const phone   = document.getElementById('phone').value.trim();
+    const address = document.getElementById('address').value.trim();
+    const province= document.getElementById('province').value.trim();
+    const district= document.getElementById('district').value.trim();
 
-				// Tính tổng tiền đơn hàng
-				let totalAmount = cart.reduce((sum, item) => sum + (item.salePrice * item.quantity), 0);
+    let valid = true;
+    [['err-name', name], ['err-phone', phone], ['err-address', address]].forEach(([id, val]) => {
+        const el = document.getElementById(id);
+        if (!val) { el.classList.remove('d-none'); valid = false; }
+        else        el.classList.add('d-none');
+    });
+    if (!valid) return;
+    if (!/^0\d{9}$/.test(phone)) {
+        document.getElementById('err-phone').classList.remove('d-none');
+        document.getElementById('err-phone').textContent = 'Số điện thoại phải có 10 chữ số bắt đầu bằng 0.';
+        return;
+    }
 
-				// FIX LỖI 400: Viết hoa đúng PascalCase khớp DTO Backend và ép chuẩn kiểu số/chuỗi
-				let orderData = {
-					RecipientName: name,
-					RecipientPhone: phone,
-					ShippingAddress: address,
-					Province: "Chưa phân loại",
-					District: "Chưa phân loại",
-					Ward: "Chưa phân loại",
-					Note: notes,
-					SubTotal: parseFloat(totalAmount),
-					TotalAmount: parseFloat(totalAmount),
-					OrderItems: cart.map(item => {
-						return {
-							// Nếu variantId bị thiếu hoặc bằng 0, ép về 1 (Id của dòng mẫu trong DB) để tránh lỗi Foreign Key
-							VariantId: parseInt(item.variantId || item.VariantId || 1),
-							ProductName: String(item.productName || "Giày Sneaker"),
-							SizeValue: String(item.sizeName || "Mặc định"),
-							ColorName: String(item.colorName || "Mặc định"),
-							Quantity: parseInt(item.quantity || 1),
-							UnitPrice: parseFloat(item.salePrice || 0)
-						};
-					})
-				};
+    const subtotal = parseFloat(sessionStorage.getItem('cart_subtotal')) ||
+                     cart.reduce((s,i)=>s+(i.salePrice||0)*i.quantity, 0);
+    const shipping = parseFloat(sessionStorage.getItem('cart_shipping')) || (subtotal >= 500000 ? 0 : 30000);
+    const total    = subtotal + shipping;
 
-				console.log("Dữ liệu gửi lên API Orders (Đã sửa lỗi 400):", orderData);
+    const btn = document.getElementById('btn-place-order');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Đang xử lý...';
 
-				// 3. Thực hiện gửi lệnh POST ngầm đẩy đơn hàng vào Database qua API
-				$.ajax({
-					url: apiOrderUrl,
-					type: 'POST',
-					contentType: 'application/json',
-					data: JSON.stringify(orderData),
-					success: function (response) {
-						// Chấp nhận cả 2 định dạng response: trực tiếp hoặc bọc qua thuộc tính .success
-						if (response && (response.success === true || response.Success === true || response.data)) {
-							// Xóa sạch giỏ hàng trong LocalStorage vì đã mua thành công
-							localStorage.removeItem('shoes_shop_cart');
+    const payload = {
+        RecipientName:   name,
+        RecipientPhone:  phone,
+        ShippingAddress: address,
+        Province:        province || 'Chưa phân loại',
+        District:        district || 'Chưa phân loại',
+        Ward:            document.getElementById('ward').value.trim() || '',
+        Note:            document.getElementById('note').value.trim(),
+        SubTotal:        subtotal,
+        ShippingFee:     shipping,
+        DiscountAmount:  0,
+        TotalAmount:     total,
+        OrderItems: cart.map(item => ({
+            VariantId:   parseInt(item.variantId || 1),
+            ProductName: item.productName,
+            SizeValue:   item.sizeName || 'Mặc định',
+            ColorName:   item.colorName || 'Mặc định',
+            Quantity:    item.quantity,
+            UnitPrice:   item.salePrice || 0
+        }))
+    };
 
-							let idDonHang = response.data || response.Data || '';
-							alert(`🎉 Chúc mừng!\nĐơn hàng của bạn đã được hệ thống tiếp nhận thành công.\nMã ID đơn hàng của bạn là: ${idDonHang}`);
+    $.ajax({
+        url: API_BASE + '/api/orders',
+        type: 'POST',
+        contentType: 'application/json',
+        headers: JWT_TOKEN ? { 'Authorization': 'Bearer ' + JWT_TOKEN } : {},
+        data: JSON.stringify(payload),
+        success: function(res) {
+            localStorage.removeItem('shoes_shop_cart');
+            const badge = document.getElementById('cart-count');
+            if (badge) { badge.textContent = '0'; badge.style.display = 'none'; }
+            const orderId = res?.data || res?.Data || res?.orderId || '—';
+            document.getElementById('order-id-display').textContent = '#' + orderId;
+            new bootstrap.Modal(document.getElementById('successModal')).show();
+        },
+        error: function(xhr) {
+            console.error('Order error:', xhr.responseText);
+            const msg = tryParseError(xhr.responseText);
+            alert('Đặt hàng thất bại: ' + msg);
+            btn.disabled = false;
+            btn.innerHTML = '<i class="bi bi-check2-circle me-2"></i>Xác nhận đặt hàng';
+        }
+    });
+}
 
-							// Chuyển hướng người dùng về trang chủ
-							window.location.href = '/';
-						} else {
-							alert("Đặt hàng thất bại: " + (response.message || response.Message || "Lỗi hệ thống xử lý API"));
-							$('#btn-submit-order').prop('disabled', false).html('<i class="bi bi-check-circle-fill me-2"></i> Xác nhận đặt hàng');
-						}
-					},
-					error: function (xhr) {
-						// In chi tiết phản hồi lỗi từ API để dễ theo dõi nếu còn trục trặc
-						console.error("Chi tiết lỗi 400/500 từ API:", xhr.responseText);
-						alert(`Lỗi kết nối API đặt hàng (Mã lỗi: ${xhr.status}). Không thể tạo đơn, vui lòng thử lại!`);
-						$('#btn-submit-order').prop('disabled', false).html('<i class="bi bi-check-circle-fill me-2"></i> Xác nhận đặt hàng');
-					}
-				});
-			});
-		});
-	</script>
+function tryParseError(text) {
+    try { return JSON.parse(text)?.message || JSON.parse(text)?.title || text; }
+    catch { return text || 'Lỗi hệ thống'; }
+}
+</script>
+<style>
+.invalid-feedback-clean { font-size:0.78rem; color:#e63946; margin-top:4px; }
+.saved-addr-card:hover { border-color:#000 !important; }
+</style>
 }

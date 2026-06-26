@@ -38,50 +38,71 @@ public class ApiService
 
     public async Task<ApiResponse<T>?> GetAsync<T>(string endpoint)
     {
-        var client = CreateAuthenticatedClient();
-        var response = await client.GetAsync($"{_baseUrl}{endpoint}");
-        var json = await response.Content.ReadAsStringAsync();
-        return JsonSerializer.Deserialize<ApiResponse<T>>(json, _jsonOptions);
+        try
+        {
+            var client = CreateAuthenticatedClient();
+            var response = await client.GetAsync($"{_baseUrl}{endpoint}");
+            var json = await response.Content.ReadAsStringAsync();
+            if (string.IsNullOrWhiteSpace(json)) return null;
+            return JsonSerializer.Deserialize<ApiResponse<T>>(json, _jsonOptions);
+        }
+        catch { return null; }
     }
 
     public async Task<(ApiResponse<T>? result, System.Net.HttpStatusCode statusCode)> PostAsync<T>(string endpoint, object body)
     {
-        var client = CreateAuthenticatedClient();
-        var content = new StringContent(JsonSerializer.Serialize(body), Encoding.UTF8, "application/json");
-        var response = await client.PostAsync($"{_baseUrl}{endpoint}", content);
-        var json = await response.Content.ReadAsStringAsync();
-        var result = JsonSerializer.Deserialize<ApiResponse<T>>(json, _jsonOptions);
-        return (result, response.StatusCode);
+        try
+        {
+            var client = CreateAuthenticatedClient();
+            var content = new StringContent(JsonSerializer.Serialize(body), Encoding.UTF8, "application/json");
+            var response = await client.PostAsync($"{_baseUrl}{endpoint}", content);
+            var json = await response.Content.ReadAsStringAsync();
+            var result = string.IsNullOrWhiteSpace(json) ? null : JsonSerializer.Deserialize<ApiResponse<T>>(json, _jsonOptions);
+            return (result, response.StatusCode);
+        }
+        catch { return (null, System.Net.HttpStatusCode.InternalServerError); }
     }
 
     public async Task<(ApiResponse<T>? result, System.Net.HttpStatusCode statusCode)> PutAsync<T>(string endpoint, object body)
     {
-        var client = CreateAuthenticatedClient();
-        var content = new StringContent(JsonSerializer.Serialize(body), Encoding.UTF8, "application/json");
-        var response = await client.PutAsync($"{_baseUrl}{endpoint}", content);
-        var json = await response.Content.ReadAsStringAsync();
-        var result = JsonSerializer.Deserialize<ApiResponse<T>>(json, _jsonOptions);
-        return (result, response.StatusCode);
+        try
+        {
+            var client = CreateAuthenticatedClient();
+            var content = new StringContent(JsonSerializer.Serialize(body), Encoding.UTF8, "application/json");
+            var response = await client.PutAsync($"{_baseUrl}{endpoint}", content);
+            var json = await response.Content.ReadAsStringAsync();
+            var result = string.IsNullOrWhiteSpace(json) ? null : JsonSerializer.Deserialize<ApiResponse<T>>(json, _jsonOptions);
+            return (result, response.StatusCode);
+        }
+        catch { return (null, System.Net.HttpStatusCode.InternalServerError); }
     }
 
     public async Task<(ApiResponse<T>? result, System.Net.HttpStatusCode statusCode)> PatchAsync<T>(string endpoint, object? body = null)
     {
-        var client = CreateAuthenticatedClient();
-        HttpContent? content = body != null
-            ? new StringContent(JsonSerializer.Serialize(body), Encoding.UTF8, "application/json")
-            : null;
-        var response = await client.PatchAsync($"{_baseUrl}{endpoint}", content);
-        var json = await response.Content.ReadAsStringAsync();
-        var result = JsonSerializer.Deserialize<ApiResponse<T>>(json, _jsonOptions);
-        return (result, response.StatusCode);
+        try
+        {
+            var client = CreateAuthenticatedClient();
+            HttpContent? content = body != null
+                ? new StringContent(JsonSerializer.Serialize(body), Encoding.UTF8, "application/json")
+                : null;
+            var response = await client.PatchAsync($"{_baseUrl}{endpoint}", content);
+            var json = await response.Content.ReadAsStringAsync();
+            var result = string.IsNullOrWhiteSpace(json) ? null : JsonSerializer.Deserialize<ApiResponse<T>>(json, _jsonOptions);
+            return (result, response.StatusCode);
+        }
+        catch { return (null, System.Net.HttpStatusCode.InternalServerError); }
     }
 
     public async Task<(ApiResponse<T>? result, System.Net.HttpStatusCode statusCode)> DeleteAsync<T>(string endpoint)
     {
-        var client = CreateAuthenticatedClient();
-        var response = await client.DeleteAsync($"{_baseUrl}{endpoint}");
-        var json = await response.Content.ReadAsStringAsync();
-        var result = JsonSerializer.Deserialize<ApiResponse<T>>(json, _jsonOptions);
-        return (result, response.StatusCode);
+        try
+        {
+            var client = CreateAuthenticatedClient();
+            var response = await client.DeleteAsync($"{_baseUrl}{endpoint}");
+            var json = await response.Content.ReadAsStringAsync();
+            var result = string.IsNullOrWhiteSpace(json) ? null : JsonSerializer.Deserialize<ApiResponse<T>>(json, _jsonOptions);
+            return (result, response.StatusCode);
+        }
+        catch { return (null, System.Net.HttpStatusCode.InternalServerError); }
     }
 }

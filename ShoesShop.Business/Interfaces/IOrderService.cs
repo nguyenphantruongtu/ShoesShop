@@ -28,4 +28,7 @@ public interface IOrderService
 
     /// <summary>UC-20 + UC-22: Chi tiết đơn hàng của customer (kèm timeline + tracking)</summary>
     Task<OrderDetailResponse> GetMyOrderDetailAsync(int orderId, int userId);
+
+    /// <summary>UC-21: Customer tự hủy đơn (chỉ Pending/Confirmed) + rollback stock</summary>
+    Task<OrderDetailResponse> CancelByCustomerAsync(int orderId, int userId, string cancelReason);
 }

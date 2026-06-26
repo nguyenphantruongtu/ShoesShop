@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using ShoesShop.Business.Interfaces;
+using ShoesShop.Shared.DTOs.Order;
 using System.Security.Claims;
 
 namespace ShoesShop.API.Controllers;
@@ -54,6 +55,26 @@ public class CustomerOrderController : ControllerBase
         catch (KeyNotFoundException ex)
         {
             return NotFound(ApiResponse<OrderDetailResponse>.Fail(ex.Message));
+        }
+    }
+
+    // ── UC-21: Hủy đơn (customer) ────────────────────────────────────────────
+
+    [HttpPatch("{orderId:int}/cancel")]
+    public async Task<IActionResult> CancelMyOrder(int orderId, [FromBody] CancelOrderRequest request)
+    {
+        try
+        {
+            var result = await _service.CancelByCustomerAsync(orderId, UserId, request.CancelReason);
+            return Ok(ApiResponse<OrderDetailResponse>.Ok(result));
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(ApiResponse<OrderDetailResponse>.Fail(ex.Message));
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(ApiResponse<OrderDetailResponse>.Fail(ex.Message));
         }
     }
 }

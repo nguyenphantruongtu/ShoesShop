@@ -52,7 +52,7 @@ public class ProductsController : Controller
         if (r?.Success == true)
         {
             TempData["Success"] = "Tạo sản phẩm thành công!";
-            var pid = r?.Data?.GetProperty("productId").GetInt32() ?? 0;
+            var pid = r?.Data.GetProperty("productId").GetInt32() ?? 0;
             return RedirectToAction(nameof(Edit), new { id = pid });
         }
         TempData["Error"] = r?.Message ?? "Thất bại";

@@ -1,236 +1,257 @@
-﻿@model IEnumerable<ShoesShop.Shared.DTOs.Product.ProductDto>
-
 @{
-    ViewData["Title"] = "Trang Chủ - Shoes Shop";
+    ViewData["Title"] = "STRIDEX — Giày Thể Thao Cao Cấp";
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
 
-<div class="container my-5">
-    <div class="row align-items-center p-4 p-md-5 rounded-5 shadow-sm" style="background-color: #f8faff;">
-        <div class="col-lg-6 mb-4 mb-lg-0">
-            <span class="badge bg-primary bg-opacity-10 text-primary px-3 py-2 rounded-pill fw-bold mb-3 small">✨ Mới nhất 2026</span>
-            <h1 class="display-4 fw-black text-dark mb-3" style="letter-spacing: -1px; font-weight: 800; color: #3b448f !important;">Khám Phá Sản Phẩm<br>Chất Lượng Hôm Nay</h1>
-            <p class="text-secondary lh-lg mb-4" style="max-width: 500px;">
-                Duyệt qua bộ sưu tập phong phú các mặt hàng giày thể thao cao cấp và thời thượng của chúng tôi. Từ công nghệ đệm mới nhất đến nhu cầu phong cách hàng ngày, chúng tôi có tất cả những gì bạn cần.
-            </p>
-            <a href="#product-collection-section" class="btn btn-primary btn-lg rounded-4 px-4 py-3 fw-bold shadow-sm transition-link">
-                Mua Ngay <i class="bi bi-arrow-right ms-2"></i>
-            </a>
-        </div>
-        <div class="col-lg-6 text-center">
-            <img src="https://images.unsplash.com/photo-1542291026-7eec264c27ff?q=80&w=600&auto=format&fit=crop"
-                 alt="Giày Sneaker Banner"
-                 class="img-fluid rounded-4 shadow"
-                 style="max-height: 400px; object-fit: cover; border: 8px solid #fff;">
+<!-- ═══════════════════════ HERO ═══════════════════════ -->
+<section class="hero-section">
+    <img class="hero-image"
+         src="https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=1400&auto=format&fit=crop&q=80"
+         alt="Hero Shoes">
+    <div class="hero-bg"></div>
+    <div class="container-xxl px-4 py-5 hero-content">
+        <div class="col-lg-6">
+            <p class="hero-eyebrow">Bộ sưu tập 2026</p>
+            <h1 class="hero-title">Bước Tiếp<br>Không Giới Hạn</h1>
+            <p class="hero-subtitle">Khám phá những đôi giày thể thao được thiết kế cho phong cách sống năng động của bạn.</p>
+            <div class="d-flex gap-3 flex-wrap">
+                <a asp-controller="Products" asp-action="Index" class="btn-white">
+                    Mua ngay <i class="bi bi-arrow-right ms-1"></i>
+                </a>
+                <a asp-controller="Products" asp-action="Index" asp-route-gender="Men"
+                   class="btn-black" style="border-color:rgba(255,255,255,0.4);background:transparent;">
+                    Xem BST Nam
+                </a>
+            </div>
         </div>
     </div>
-</div>
+</section>
 
-<div id="product-collection-section" class="container my-5 pt-4">
-    <div class="text-center mb-4">
-        <span class="text-uppercase text-primary fw-bold small tracking-wider" style="letter-spacing: 2px;">Bộ Sưu Tập</span>
-        <h2 class="fw-bold text-dark mt-1">Khám Phá Sản Phẩm</h2>
-    </div>
-
-    <div class="card border-0 shadow-sm rounded-4 p-3 mb-5" style="background-color: #fff;">
+<!-- ═══════════════════════ CATEGORY TILES ═══════════════════════ -->
+<section class="section-pad-sm">
+    <div class="container-xxl px-4">
         <div class="row g-3">
-            <div class="col-md-6">
-                <div class="input-group">
-                    <span class="input-group-text bg-light border-0 text-muted"><i class="bi bi-search"></i></span>
-                    <input type="text" id="search-input" class="form-control bg-light border-0 py-2.5 ps-1" placeholder="Tìm kiếm sản phẩm theo tên...">
-                </div>
+            <div class="col-md-4">
+                <a asp-controller="Products" asp-action="Index" asp-route-gender="Men"
+                   class="category-card d-block" style="aspect-ratio:2/3">
+                    <img src="https://images.unsplash.com/photo-1491553895911-0055eca6402d?w=600&auto=format&fit=crop"
+                         alt="Giày Nam" loading="lazy">
+                    <div class="category-card-overlay">
+                        <div>
+                            <div class="category-card-label">Giày Nam</div>
+                            <div style="color:rgba(255,255,255,0.7);font-size:0.78rem;margin-top:4px;text-transform:uppercase;letter-spacing:0.1em;">Khám phá →</div>
+                        </div>
+                    </div>
+                </a>
             </div>
             <div class="col-md-4">
-                <select id="sort-select" class="form-select bg-light border-0 py-2.5 text-secondary">
-                    <option value="newest">Sắp xếp: Mới nhất</option>
-                    <option value="price-asc">Giá: Thấp đến Cao</option>
-                    <option value="price-desc">Giá: Cao đến Thấp</option>
-                </select>
+                <a asp-controller="Products" asp-action="Index" asp-route-gender="Women"
+                   class="category-card d-block" style="aspect-ratio:2/3">
+                    <img src="https://images.unsplash.com/photo-1543163521-1bf539c55dd2?w=600&auto=format&fit=crop"
+                         alt="Giày Nữ" loading="lazy">
+                    <div class="category-card-overlay">
+                        <div>
+                            <div class="category-card-label">Giày Nữ</div>
+                            <div style="color:rgba(255,255,255,0.7);font-size:0.78rem;margin-top:4px;text-transform:uppercase;letter-spacing:0.1em;">Khám phá →</div>
+                        </div>
+                    </div>
+                </a>
             </div>
-            <div class="col-md-2">
-                <button id="btn-filter" class="btn btn-primary w-100 py-2.5 rounded-3 fw-bold text-uppercase">Lọc</button>
+            <div class="col-md-4 d-flex flex-column gap-3">
+                <a asp-controller="Products" asp-action="Index" asp-route-gender="Unisex"
+                   class="category-card d-block flex-grow-1" style="aspect-ratio:unset;height:49%">
+                    <img src="https://images.unsplash.com/photo-1608231387042-66d1773070a5?w=600&auto=format&fit=crop"
+                         alt="Unisex" loading="lazy" style="height:100%;width:100%;object-fit:cover">
+                    <div class="category-card-overlay">
+                        <div>
+                            <div class="category-card-label">Unisex</div>
+                            <div style="color:rgba(255,255,255,0.7);font-size:0.78rem;margin-top:4px;text-transform:uppercase;letter-spacing:0.1em;">Khám phá →</div>
+                        </div>
+                    </div>
+                </a>
+                <a asp-controller="Products" asp-action="Index"
+                   class="category-card d-block flex-grow-1" style="aspect-ratio:unset;height:49%">
+                    <img src="https://images.unsplash.com/photo-1600185365483-26d7a4cc7519?w=600&auto=format&fit=crop"
+                         alt="New Arrivals" loading="lazy" style="height:100%;width:100%;object-fit:cover">
+                    <div class="category-card-overlay">
+                        <div>
+                            <div class="category-card-label">Hàng mới về</div>
+                            <div style="color:rgba(255,255,255,0.7);font-size:0.78rem;margin-top:4px;text-transform:uppercase;letter-spacing:0.1em;">Khám phá →</div>
+                        </div>
+                    </div>
+                </a>
             </div>
         </div>
     </div>
+</section>
 
-    <div id="home-loading" class="text-center py-5">
-        <div class="spinner-border text-primary" role="status"></div>
-        <p class="text-muted mt-2">Đang nạp danh sách giày từ hệ thống API...</p>
+<!-- ═══════════════════════ FEATURED PRODUCTS ═══════════════════════ -->
+<section class="section-pad bg-offwhite">
+    <div class="container-xxl px-4">
+        <div class="d-flex justify-content-between align-items-end mb-5">
+            <div>
+                <span class="section-eyebrow">Nổi bật</span>
+                <h2 class="section-title mb-0">Sản phẩm hot</h2>
+            </div>
+            <a asp-controller="Products" asp-action="Index"
+               class="d-none d-md-inline-flex align-items-center gap-2"
+               style="font-size:0.82rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:#000;border-bottom:2px solid #000;padding-bottom:2px;">
+                Xem tất cả <i class="bi bi-arrow-right"></i>
+            </a>
+        </div>
+
+        <!-- Loading state -->
+        <div id="home-loading" class="text-center py-5">
+            <div class="spinner-border" role="status" style="width:28px;height:28px;border-width:2px;color:#000"></div>
+            <p style="font-size:0.82rem;color:#888;margin-top:10px;">Đang tải sản phẩm...</p>
+        </div>
+
+        <!-- Grid -->
+        <div id="products-grid" class="row row-cols-2 row-cols-md-3 row-cols-lg-4 g-0 d-none"
+             style="gap:0; row-gap:28px !important;">
+        </div>
+
+        <div class="text-center mt-5 d-none" id="view-all-btn">
+            <a asp-controller="Products" asp-action="Index" class="btn-black px-5">
+                Xem tất cả sản phẩm
+            </a>
+        </div>
     </div>
+</section>
 
-    <div id="products-grid" class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-4 d-none">
+<!-- ═══════════════════════ BANNER STRIP ═══════════════════════ -->
+<section style="background:#000;padding:56px 0;overflow:hidden;">
+    <div class="container-xxl px-4">
+        <div class="row align-items-center g-5">
+            <div class="col-lg-6">
+                <p class="hero-eyebrow">Công nghệ đệm mới</p>
+                <h2 class="section-title" style="color:#fff;font-size:2.6rem;">
+                    Comfort<br>Được Nâng Cấp
+                </h2>
+                <p style="color:rgba(255,255,255,0.65);margin:20px 0 32px;max-width:380px;font-size:0.95rem;">
+                    Công nghệ đệm tiên tiến, thiết kế nhẹ nhàng — đồng hành cùng bạn suốt cả ngày dài.
+                </p>
+                <a asp-controller="Products" asp-action="Index" class="btn-white">
+                    Khám phá ngay
+                </a>
+            </div>
+            <div class="col-lg-6 text-center">
+                <img src="https://images.unsplash.com/photo-1606107557195-0e29a4b5b4aa?w=700&auto=format&fit=crop&q=80"
+                     alt="Comfort Shoes"
+                     style="max-height:360px;object-fit:contain;filter:drop-shadow(0 20px 40px rgba(255,255,255,0.1))"
+                     loading="lazy">
+            </div>
+        </div>
     </div>
-</div>
+</section>
 
-<style>
-    .product-card {
-        transition: transform 0.3s ease, box-shadow 0.3s ease;
-    }
-
-        .product-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 1rem 3rem rgba(0,0,0,.125) !important;
-        }
-
-    .img-container {
-        position: relative;
-        overflow: hidden;
-        background-color: #f8f9fa;
-    }
-
-    .product-overlay {
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: rgba(0, 0, 0, 0.2);
-        opacity: 0;
-        transition: opacity 0.3s ease;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
-
-    .product-card:hover .product-overlay {
-        opacity: 1;
-    }
-</style>
+<!-- ═══════════════════════ WHY US ═══════════════════════ -->
+<section class="section-pad">
+    <div class="container-xxl px-4">
+        <div class="text-center mb-5">
+            <span class="section-eyebrow">Cam kết của chúng tôi</span>
+            <h2 class="section-title">Tại sao chọn STRIDEX?</h2>
+        </div>
+        <div class="row g-4 text-center">
+            @foreach (var item in new[] {
+                new { icon="bi-shield-check", title="Hàng Chính Hãng 100%", desc="Cam kết nguồn gốc rõ ràng, chính hãng từ nhà sản xuất." },
+                new { icon="bi-truck", title="Giao Hàng Miễn Phí", desc="Miễn phí vận chuyển toàn quốc cho đơn từ 500.000đ." },
+                new { icon="bi-arrow-repeat", title="Đổi Trả Dễ Dàng", desc="30 ngày đổi trả miễn phí nếu không vừa ý." },
+                new { icon="bi-headset", title="Hỗ Trợ 24/7", desc="Đội ngũ tư vấn luôn sẵn sàng hỗ trợ bạn." }
+            })
+            {
+                <div class="col-sm-6 col-lg-3">
+                    <div class="p-4">
+                        <div style="width:52px;height:52px;background:#f3f3f3;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;">
+                            <i class="bi @item.icon" style="font-size:1.3rem;color:#000"></i>
+                        </div>
+                        <h6 style="font-weight:800;text-transform:uppercase;letter-spacing:0.04em;font-size:0.85rem;margin-bottom:8px;">@item.title</h6>
+                        <p style="font-size:0.82rem;color:#888;margin:0;line-height:1.6;">@item.desc</p>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</section>
 
 @section Scripts {
-    <script>
-        $(document).ready(function () {
-            const apiUrl = 'https://localhost:7214/api/products';
-            let originalProducts = [];
+<script>
+const API_BASE = 'https://localhost:7214';
 
-            // 1. Gọi AJAX lấy danh sách sản phẩm
-            $.ajax({
-                url: apiUrl,
-                type: 'GET',
-                dataType: 'json',
-                success: function (response) {
-                    console.log("Dữ liệu API thực tế trả về:", response); // Bạn có thể nhấn F12 trên trình duyệt để kiểm tra
-
-                    // TỰ ĐỘNG KHỚP CẤU TRÚC:
-                    // Trường hợp 1: API trả về kiểu bọc thông thường { success: true, data: [...] }
-                    if (response && response.success && Array.isArray(response.data)) {
-                        originalProducts = response.data;
-                    }
-                    // Trường hợp 2: API trả về thẳng một mảng thuần [...]
-                    else if (Array.isArray(response)) {
-                        originalProducts = response;
-                    }
-                    // Trường hợp 3: API trả về kiểu bọc nhưng chỉ có data dạng mảng
-                    else if (response && Array.isArray(response.data)) {
-                        originalProducts = response.data;
-                    }
-
-                    // Nếu sau khi kiểm tra mà có dữ liệu, tiến hành vẽ giao diện
-                    if (originalProducts && originalProducts.length >= 0) {
-                        renderProductsList(originalProducts);
-                    } else {
-                        $('#home-loading').html('<div class="alert alert-warning text-center">Dữ liệu trả về từ API không phải là một danh sách hợp lệ!</div>');
-                    }
-                },
-                error: function (xhr) {
-                    $('#home-loading').html(`<div class="alert alert-danger text-center">Lỗi kết nối API Backend (Mã lỗi: ${xhr.status}). Vui lòng kiểm tra dự án API đã chạy và kết nối được Database chưa!</div>`);
-                }
-            });
-
-            // 2. Hàm vòng lặp xây dựng thẻ hiển thị sản phẩm
-            function renderProductsList(products) {
-                if (products.length === 0) {
-                    $('#products-grid').html('<div class="col-12 text-center text-muted py-5">Hiện tại hệ thống chưa có sản phẩm giày nào!</div>').removeClass('d-none');
-                    $('#home-loading').hide();
-                    return;
-                }
-
-                let cardsHtml = '';
-                products.forEach(product => {
-                    // Kiểm tra và lấy ảnh, hỗ trợ cả chữ viết hoa/viết thường của thuộc tính (imageUrls hoặc ImageUrls)
-                    let urls = product.imageUrls || product.ImageUrls || [];
-                    let mainImage = (urls.length > 0) ? urls[0] : '/images/no-image.png';
-
-                    // Hỗ trợ cả thuộc tính viết hoa/thường từ API (productId hoặc ProductId)
-                    let pId = product.productId || product.ProductId || product.id;
-                    let pName = product.productName || product.ProductName;
-                    let pPrice = product.salePrice || product.SalePrice || product.basePrice || product.BasePrice || 0;
-                    let pDesc = product.shortDescription || product.ShortDescription || "";
-
-                    let detailUrl = `/Products/Detail/${pId}`;
-
-                    cardsHtml += `
-                        <div class="col">
-                            <div class="card h-100 border-0 shadow-sm rounded-4 product-card overflow-hidden">
-                                <div class="img-container" style="height: 240px;">
-                                    <img src="${mainImage}" class="w-100 h-100" style="object-fit: cover;" alt="${pName}">
-                                    <div class="product-overlay">
-                                        <a href="${detailUrl}" class="btn btn-light btn-sm rounded-circle shadow-sm px-2.5 py-2" title="Xem chi tiết">
-                                            <i class="bi bi-eye-fill text-dark fs-5"></i>
-                                        </a>
-                                    </div>
-                                </div>
-                                <div class="card-body d-flex flex-column p-4">
-                                    <span class="text-uppercase text-muted fw-semibold mb-1" style="font-size: 0.72rem; letter-spacing: 0.5px;">Giày Sneaker</span>
-                                    <h6 class="card-title fw-bold text-dark mb-2 text-truncate" title="${pName}">
-                                        <a href="${detailUrl}" class="text-decoration-none text-dark hover-primary">${pName}</a>
-                                    </h6>
-                                    <div class="mt-auto d-flex justify-content-between align-items-center">
-                                        <div>
-                                            <span class="text-danger fw-bold fs-6">${pPrice.toLocaleString('vi-VN')} đ</span>
-                                        </div>
-                                        <a href="${detailUrl}" class="btn btn-outline-primary btn-sm rounded-pill px-3 py-1 small fw-semibold">Xem chi tiết</a>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>`;
-                });
-
-                // Tắt hiệu ứng loading và bật hiển thị giao diện chính công khai
-                $('#home-loading').hide();
-                $('#products-grid').html(cardsHtml).removeClass('d-none').show();
+$.ajax({
+    url: API_BASE + '/api/products/featured',
+    type: 'GET',
+    success: function(res) {
+        let products = [];
+        if (res && res.success && Array.isArray(res.data)) products = res.data;
+        else if (Array.isArray(res)) products = res;
+        renderProducts(products.slice(0, 8));
+    },
+    error: function() {
+        // fallback: try general list
+        $.ajax({
+            url: API_BASE + '/api/products?$top=8&$orderby=ProductId desc',
+            type: 'GET',
+            success: function(res) {
+                let products = res && res.value ? res.value : (Array.isArray(res) ? res : []);
+                renderProducts(products.slice(0, 8));
+            },
+            error: function() {
+                $('#home-loading').html('<p style="color:#888;font-size:0.85rem;">Không thể tải sản phẩm. Kiểm tra API server.</p>');
             }
-
-            // 3. Logic xử lý tìm kiếm và sắp xếp giá tiền khi click nút "LỌC"
-            $('#btn-filter').click(function () {
-                let searchKeyword = $('#search-input').val().toLowerCase().trim();
-                let sortType = $('#sort-select').val();
-
-                let filteredResults = originalProducts.filter(p => {
-                    let name = (p.productName || p.ProductName || "").toLowerCase();
-                    let desc = (p.shortDescription || p.ShortDescription || "").toLowerCase();
-                    return name.includes(searchKeyword) || desc.includes(searchKeyword);
-                });
-
-                if (sortType === 'price-asc') {
-                    filteredResults.sort((a, b) => {
-                        let priceA = a.salePrice || a.SalePrice || 0;
-                        let priceB = b.salePrice || b.SalePrice || 0;
-                        return priceA - priceB;
-                    });
-                } else if (sortType === 'price-desc') {
-                    filteredResults.sort((a, b) => {
-                        let priceA = a.salePrice || a.SalePrice || 0;
-                        let priceB = b.salePrice || b.SalePrice || 0;
-                        return priceB - priceA;
-                    });
-                } else {
-                    filteredResults.sort((a, b) => {
-                        let idA = a.productId || a.ProductId || 0;
-                        let idB = b.productId || b.ProductId || 0;
-                        return idB - idA;
-                    });
-                }
-
-                renderProductsList(filteredResults);
-            });
-
-            // Bắt sự kiện gõ nút Enter trên bàn phím tại ô tìm kiếm
-            $('#search-input').keypress(function (e) {
-                if (e.which == 13) {
-                    $('#btn-filter').click();
-                }
-            });
         });
-    </script>
+    }
+});
+
+function renderProducts(products) {
+    $('#home-loading').hide();
+    if (!products.length) {
+        $('#products-grid').html('<div class="col-12 text-center py-5" style="color:#888">Chưa có sản phẩm nào.</div>').removeClass('d-none');
+        return;
+    }
+
+    let html = '';
+    products.forEach(p => {
+        const id        = p.productId || p.ProductId;
+        const name      = p.productName || p.ProductName || '';
+        const base      = p.basePrice || p.BasePrice || 0;
+        const sale      = p.salePrice || p.SalePrice;
+        const hasSale   = sale && sale < base;
+        const price     = hasSale ? sale : base;
+        const salePct   = hasSale ? Math.round((1 - sale/base)*100) : 0;
+        const imgs      = p.imageUrls || p.ImageUrls || [];
+        const img       = imgs.length ? imgs[0] : 'https://placehold.co/400x400/f3f3f3/888?text=No+Image';
+        const brand     = p.brandName || p.BrandName || 'Sneaker';
+        const url       = '/Products/Detail/' + id;
+
+        html += `
+        <div class="col px-2">
+            <div class="product-card">
+                <div class="product-card-img-wrap">
+                    ${hasSale ? `<span class="product-badge product-badge-sale">-${salePct}%</span>` : '<span class="product-badge product-badge-new">Mới</span>'}
+                    <img src="${img}" alt="${name}" loading="lazy" onerror="this.src='https://placehold.co/400x400/f3f3f3/888?text=No+Image'">
+                    <div class="product-card-overlay">
+                        <a href="${url}" class="product-card-quick-btn">Xem chi tiết</a>
+                    </div>
+                </div>
+                <div class="product-card-body">
+                    <div class="product-card-category">${brand}</div>
+                    <div class="product-card-name">
+                        <a href="${url}" style="color:#000">${name}</a>
+                    </div>
+                    <div class="product-card-price">
+                        ${hasSale
+                            ? `<span class="sale">${price.toLocaleString('vi-VN')}₫</span><span class="original">${base.toLocaleString('vi-VN')}₫</span>`
+                            : `${price.toLocaleString('vi-VN')}₫`
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>`;
+    });
+
+    $('#products-grid').html(html).removeClass('d-none');
+    $('#view-all-btn').removeClass('d-none');
+}
+</script>
 }

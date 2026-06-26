@@ -9,6 +9,8 @@ public class MappingProfile : Profile
     {
         // Cấu hình map sản phẩm
         CreateMap<Product, ProductDto>()
+            .ForMember(dest => dest.BrandName,    opt => opt.MapFrom(src => src.Brand != null ? src.Brand.BrandName : null))
+            .ForMember(dest => dest.CategoryName, opt => opt.MapFrom(src => src.Category != null ? src.Category.CategoryName : null))
             .ForMember(dest => dest.ImageUrls,
                        opt => opt.MapFrom(src => src.ProductImages.OrderBy(i => i.DisplayOrder).Select(i => i.ImageUrl).ToList()))
             .ForMember(dest => dest.Variants,

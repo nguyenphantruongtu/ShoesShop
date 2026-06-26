@@ -18,7 +18,7 @@ namespace ShoesShop.Web.Controllers
         }
 
         // UC-04: Trang chi tiết sản phẩm
-        [HttpGet("{id:int}")]
+        [HttpGet("Detail/{id:int}")]
         public async Task<IActionResult> Detail(int id)
         {
             var productResp = await _api.GetAsync<JsonElement>($"/api/products/{id}");

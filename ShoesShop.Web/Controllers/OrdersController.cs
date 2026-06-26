@@ -25,9 +25,12 @@ public class OrdersController : Controller
     public async Task<IActionResult> Detail(int id)
     {
         var resp = await _api.GetAsync<JsonElement>($"/api/orders/{id}");
-        if (resp?.Data is null || resp.Data.ValueKind == JsonValueKind.Undefined)
+        if (resp?.Data is null
+            || resp.Data.ValueKind == JsonValueKind.Undefined
+            || resp.Data.ValueKind == JsonValueKind.Null
+            || resp.Success == false)
         {
-            TempData["Error"] = "Không tìm thấy đơn hàng.";
+            TempData["Error"] = resp?.Message ?? "Không tìm thấy đơn hàng.";
             return RedirectToAction(nameof(Index));
         }
         return View(resp.Data);

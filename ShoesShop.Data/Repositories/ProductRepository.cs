@@ -102,7 +102,11 @@ public class ProductRepository : IProductRepository
     }
 
     public IQueryable<Product> GetQueryable()
-        => _context.Products.Include(p => p.ProductImages).AsQueryable();
+        => _context.Products
+            .Include(p => p.Brand)
+            .Include(p => p.Category)
+            .Include(p => p.ProductImages)
+            .AsQueryable();
 
     public async Task<IEnumerable<Product>> GetFeaturedProductsAsync()
         => await _context.Products

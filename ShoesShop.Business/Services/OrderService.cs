@@ -264,6 +264,45 @@ public class OrderService : IOrderService
         return MapToDetail(order);
     }
 
+    // ── UC-21: Customer tự hủy đơn ─────────────────────────────────────────
+    public async Task<OrderDetailResponse> CancelByCustomerAsync(int orderId, int userId, string cancelReason)
+    {
+        var order = await _repo.GetByIdAndUserIdAsync(orderId, userId)
+            ?? throw new KeyNotFoundException($"Không tìm thấy đơn hàng #{orderId}.");
+
+        if (!OrderStatus.IsCancellable(order.OrderStatus))
+            throw new InvalidOperationException(
+                $"Không thể hủy đơn ở trạng thái '{order.OrderStatus}'.");
+
+        foreach (var item in order.OrderItems)
+        {
+            var variant = await _repo.GetVariantByIdAsync(item.VariantId);
+            if (variant != null)
+            {
+                variant.StockQuantity += item.Quantity;
+                await _repo.UpdateVariantAsync(variant);
+            }
+        }
+
+        order.OrderStatus  = OrderStatus.Cancelled;
+        order.CancelReason = cancelReason;
+        order.CancelledAt  = DateTime.UtcNow;
+        order.UpdatedAt    = DateTime.UtcNow;
+
+        await _repo.UpdateAsync(order);
+        await _repo.AddStatusHistoryAsync(new OrderStatusHistory
+        {
+            OrderId         = orderId,
+            Status          = OrderStatus.Cancelled,
+            Note            = $"Khách hàng hủy đơn. Lý do: {cancelReason}",
+            ChangedByUserId = userId,
+            ChangedAt       = DateTime.UtcNow
+        });
+
+        var updated = await _repo.GetByIdAndUserIdAsync(orderId, userId);
+        return MapToDetail(updated!);
+    }
+
     // ── Helpers ──────────────────────────────────────────────────────────────
 
     private async Task HandleShipmentAsync(Order order, UpdateOrderStatusRequest req)

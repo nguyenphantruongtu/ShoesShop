@@ -6,13 +6,17 @@ public class ProductDto
     public string ProductName { get; set; } = null!;
     public string Slug { get; set; } = null!;
     public int CategoryId { get; set; }
+    public string? CategoryName { get; set; }
     public int BrandId { get; set; }
+    public string? BrandName { get; set; }
     public string? Description { get; set; }
     public string? ShortDescription { get; set; }
     public decimal BasePrice { get; set; }
     public decimal? SalePrice { get; set; }
     public string? Gender { get; set; }
     public string? Material { get; set; }
+    public bool IsActive { get; set; }
+    public bool IsFeatured { get; set; }
     public List<string> ImageUrls { get; set; } = new();
     public List<ProductVariantDto> Variants { get; set; } = new();
 }
