@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "jnMEuTtl9vA=",
+  "dgSpecHash": "3e3QM3RaRes=",
   "success": true,
-  "projectFilePath": "C:\\Users\\iac26\\OneDrive\\Desktop\\prn66\\ShoesShop\\ShoesShop.Data\\ShoesShop.Data.csproj",
+  "projectFilePath": "C:\\Users\\iac26\\OneDrive\\Desktop\\prn222ASM2\\ShoesShop\\ShoesShop.Data\\ShoesShop.Data.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\iac26\\.nuget\\packages\\azure.core\\1.35.0\\azure.core.1.35.0.nupkg.sha512",
     "C:\\Users\\iac26\\.nuget\\packages\\azure.identity\\1.10.3\\azure.identity.1.10.3.nupkg.sha512",

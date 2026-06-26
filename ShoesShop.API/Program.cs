@@ -36,6 +36,7 @@ builder.Services.AddScoped<ProductRepository>();
 builder.Services.AddScoped<IProductService, ProductService>();
 builder.Services.AddScoped<IDashboardService, DashboardService>();
 builder.Services.AddScoped<IReportService, ReportService>();
+builder.Services.AddScoped<IExportService, ExportService>();
 
 // 5. Đăng ký AutoMapper bằng biểu thức Lambda (Sửa lỗi gạch đỏ)
 builder.Services.AddAutoMapper(cfg =>

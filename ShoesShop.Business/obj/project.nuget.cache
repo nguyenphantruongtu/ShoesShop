@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "l5yuX31RLjQ=",
+  "dgSpecHash": "5kbFF9eMjLo=",
   "success": true,
-  "projectFilePath": "C:\\Users\\iac26\\OneDrive\\Desktop\\prn66\\ShoesShop\\ShoesShop.Business\\ShoesShop.Business.csproj",
+  "projectFilePath": "C:\\Users\\iac26\\OneDrive\\Desktop\\prn222ASM2\\ShoesShop\\ShoesShop.Business\\ShoesShop.Business.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\iac26\\.nuget\\packages\\automapper\\16.1.1\\automapper.16.1.1.nupkg.sha512",
     "C:\\Users\\iac26\\.nuget\\packages\\azure.core\\1.35.0\\azure.core.1.35.0.nupkg.sha512",
