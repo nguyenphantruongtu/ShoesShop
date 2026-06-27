@@ -1,16 +1,17 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using ShoesShop.Web.Services;
 using System.Text.Json;
 
 namespace ShoesShop.Web.Controllers
 {
+    [Authorize] 
     public class CheckoutController : Controller
     {
         private readonly ApiService _api;
         private readonly IHttpContextAccessor _httpContextAccessor;
 
         public CheckoutController(ApiService api, IHttpContextAccessor httpContextAccessor)
-
         {
             _api = api;
             _httpContextAccessor = httpContextAccessor;

@@ -32,7 +32,6 @@ public class AccountController : Controller
         ViewData["ReturnUrl"] = returnUrl;
         return View();
     }
-
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Login(LoginViewModel model, string? returnUrl = null)
@@ -64,6 +63,35 @@ public class AccountController : Controller
                 await SignInUserAsync(authData, model.RememberMe);
 
                 HttpContext.Session.SetString("JwtToken", authData.Token);
+
+                // ================== LOGIC GỘP GIỎ HÀNG TỰ ĐỘNG TẠI ĐÂY ==================
+                var guestCartJson = HttpContext.Session.GetString("GuestCart");
+                if (!string.IsNullOrEmpty(guestCartJson))
+                {
+                    try
+                    {
+                        var mergeClient = _httpClientFactory.CreateClient();
+                        // Đính kèm Token JWT vừa nhận được vào Header để API xác thực quyền Customer
+                        mergeClient.DefaultRequestHeaders.Authorization =
+                            new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", authData.Token);
+
+                        var mergeContent = new StringContent(guestCartJson, Encoding.UTF8, "application/json");
+
+                        // Gọi API Merge để gộp giỏ hàng dưới DB
+                        var mergeResponse = await mergeClient.PostAsync($"{_apiBaseUrl}/api/cart/merge", mergeContent);
+
+                        if (mergeResponse.IsSuccessStatusCode)
+                        {
+                            // Gộp thành công vào DB thì xóa sạch giỏ hàng tạm ở Session
+                            HttpContext.Session.Remove("GuestCart");
+                        }
+                    }
+                    catch
+                    {
+                        // Bọc catch để nếu API gộp lỗi thì không làm sập luồng đăng nhập chính của khách
+                    }
+                }
+                // =======================================================================
 
                 TempData["Success"] = $"Chào mừng trở lại, {authData.FullName}!";
 

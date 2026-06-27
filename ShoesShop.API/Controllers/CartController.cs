@@ -75,4 +75,32 @@ public class CartController : ControllerBase
         catch (KeyNotFoundException ex)     { return NotFound(ApiResponse<CartResponse>.Fail(ex.Message)); }
         catch (UnauthorizedAccessException) { return Forbid(); }
     }
+    /// <summary>
+    /// Thêm mới: Endpoint để gộp giỏ hàng tạm từ Session vào Database sau khi Login thành công
+    /// </summary>
+    [HttpPost("merge")]
+    public async Task<IActionResult> MergeCart([FromBody] List<AddToCartRequest> temporaryItems)
+    {
+        try
+        {
+            if (temporaryItems == null || !temporaryItems.Any())
+            {
+                var currentCart = await _service.GetCartAsync(UserId);
+                return Ok(ApiResponse<CartResponse>.Ok(currentCart, "Không có sản phẩm tạm để gộp."));
+            }
+
+            CartResponse result = null;
+            // Vòng lặp duyệt qua từng item tạm từ Session và gọi hàm AddToCart có sẵn của Service để tự động cộng dồn số lượng
+            foreach (var item in temporaryItems)
+            {
+                result = await _service.AddToCartAsync(UserId, item);
+            }
+
+            return Ok(ApiResponse<CartResponse>.Ok(result, "Đã gộp giỏ hàng thành công."));
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(ApiResponse<CartResponse>.Fail(ex.Message));
+        }
+    }
 }
