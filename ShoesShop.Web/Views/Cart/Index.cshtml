@@ -1,240 +1,251 @@
 @{
-    ViewData["Title"] = "Giỏ hàng — STRIDEX";
-    Layout = "~/Views/Shared/_Layout.cshtml";
+	ViewData["Title"] = "Giỏ hàng — STRIDEX";
+	Layout = "~/Views/Shared/_Layout.cshtml";
 }
 
 <div class="container-xxl px-4 py-5">
 
-    <!-- Header -->
-    <div class="mb-5">
-        <span class="section-eyebrow">Mua sắm</span>
-        <h1 class="section-title mb-0">Giỏ hàng của bạn</h1>
-    </div>
+	<!-- Header -->
+	<div class="mb-5">
+		<span class="section-eyebrow">Mua sắm</span>
+		<h1 class="section-title mb-0">Giỏ hàng của bạn</h1>
+	</div>
 
-    <!-- Loading -->
-    <div id="cart-loading" class="text-center py-5">
-        <div class="spinner-border" role="status" style="width:28px;height:28px;border-width:2px"></div>
-    </div>
+	<!-- Loading -->
+	<div id="cart-loading" class="text-center py-5">
+		<div class="spinner-border" role="status" style="width:28px;height:28px;border-width:2px"></div>
+	</div>
 
-    <!-- Empty state -->
-    <div id="cart-empty" class="text-center py-5 d-none" style="border-top:2px solid #000;padding-top:48px!important">
-        <i class="bi bi-bag" style="font-size:3.5rem;color:#ddd"></i>
-        <h3 style="font-size:1rem;font-weight:800;text-transform:uppercase;letter-spacing:0.1em;margin:20px 0 8px;">Giỏ hàng trống</h3>
-        <p style="font-size:0.85rem;color:#888;margin-bottom:28px">Thêm sản phẩm vào giỏ để bắt đầu mua sắm.</p>
-        <a asp-controller="Products" asp-action="Index" class="btn-black">Khám phá sản phẩm</a>
-    </div>
+	<!-- Empty state -->
+	<div id="cart-empty" class="text-center py-5 d-none" style="border-top:2px solid #000;padding-top:48px!important">
+		<i class="bi bi-bag" style="font-size:3.5rem;color:#ddd"></i>
+		<h3 style="font-size:1rem;font-weight:800;text-transform:uppercase;letter-spacing:0.1em;margin:20px 0 8px;">Giỏ hàng trống</h3>
+		<p style="font-size:0.85rem;color:#888;margin-bottom:28px">Thêm sản phẩm vào giỏ để bắt đầu mua sắm.</p>
+		<a asp-controller="Products" asp-action="Index" class="btn-black">Khám phá sản phẩm</a>
+	</div>
 
-    <!-- Cart content -->
-    <div id="cart-content" class="d-none">
-        <div class="row g-5">
+	<!-- Cart content -->
+	<div id="cart-content" class="d-none">
+		<div class="row g-5">
 
-            <!-- LEFT — Items -->
-            <div class="col-lg-8">
+			<!-- LEFT — Items -->
+			<div class="col-lg-8">
 
-                <!-- Column headers (desktop) -->
-                <div class="d-none d-md-flex mb-3 pb-3" style="border-bottom:1px solid #eee;
+				<!-- Column headers (desktop) -->
+				<div class="d-none d-md-flex mb-3 pb-3" style="border-bottom:1px solid #eee;
                             font-size:0.7rem;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:#888;">
-                    <span style="flex:1">Sản phẩm</span>
-                    <span style="width:140px;text-align:center">Số lượng</span>
-                    <span style="width:120px;text-align:end">Thành tiền</span>
-                    <span style="width:40px"></span>
-                </div>
+					<span style="flex:1">Sản phẩm</span>
+					<span style="width:140px;text-align:center">Số lượng</span>
+					<span style="width:120px;text-align:end">Thành tiền</span>
+					<span style="width:40px"></span>
+				</div>
 
-                <div id="cart-items"></div>
+				<div id="cart-items"></div>
 
-                <!-- Footer actions -->
-                <div class="d-flex justify-content-between align-items-center mt-4 pt-4" style="border-top:1px solid #eee">
-                    <a asp-controller="Products" asp-action="Index"
-                       style="font-size:0.8rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;
+				<!-- Footer actions -->
+				<div class="d-flex justify-content-between align-items-center mt-4 pt-4" style="border-top:1px solid #eee">
+					<a asp-controller="Products" asp-action="Index"
+					   style="font-size:0.8rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;
                               color:#000;border-bottom:1px solid #000;text-decoration:none;">
-                        <i class="bi bi-arrow-left me-1"></i> Tiếp tục mua sắm
-                    </a>
-                    <button onclick="clearCart()"
-                            style="font-size:0.78rem;font-weight:600;color:#e63946;border:none;background:none;cursor:pointer;text-decoration:underline;">
-                        Xóa tất cả
-                    </button>
-                </div>
-            </div>
+						<i class="bi bi-arrow-left me-1"></i> Tiếp tục mua sắm
+					</a>
+					<button onclick="clearCart()"
+							style="font-size:0.78rem;font-weight:600;color:#e63946;border:none;background:none;cursor:pointer;text-decoration:underline;">
+						Xóa tất cả
+					</button>
+				</div>
+			</div>
 
-            <!-- RIGHT — Summary -->
-            <div class="col-lg-4">
-                <div style="border:2px solid #000;padding:28px;position:sticky;top:80px">
-                    <h3 style="font-size:0.85rem;font-weight:800;text-transform:uppercase;letter-spacing:0.12em;margin-bottom:20px">Tóm tắt đơn hàng</h3>
+			<!-- RIGHT — Summary -->
+			<div class="col-lg-4">
+				<div style="border:2px solid #000;padding:28px;position:sticky;top:80px">
+					<h3 style="font-size:0.85rem;font-weight:800;text-transform:uppercase;letter-spacing:0.12em;margin-bottom:20px">Tóm tắt đơn hàng</h3>
 
-                    <div class="d-flex justify-content-between mb-3 pb-3" style="border-bottom:1px solid #eee">
-                        <span style="font-size:0.85rem;color:#666">Tạm tính (<span id="summary-count">0</span> sp)</span>
-                        <span style="font-size:0.85rem;font-weight:700" id="summary-subtotal">0₫</span>
-                    </div>
+					<div class="d-flex justify-content-between mb-3 pb-3" style="border-bottom:1px solid #eee">
+						<span style="font-size:0.85rem;color:#666">Tạm tính (<span id="summary-count">0</span> sp)</span>
+						<span style="font-size:0.85rem;font-weight:700" id="summary-subtotal">0₫</span>
+					</div>
 
-                    <div class="d-flex justify-content-between mb-3 pb-3" style="border-bottom:1px solid #eee">
-                        <span style="font-size:0.85rem;color:#666">Phí vận chuyển</span>
-                        <span style="font-size:0.85rem;font-weight:600" id="summary-ship">—</span>
-                    </div>
+					<div class="d-flex justify-content-between mb-3 pb-3" style="border-bottom:1px solid #eee">
+						<span style="font-size:0.85rem;color:#666">Phí vận chuyển</span>
+						<span style="font-size:0.85rem;font-weight:600" id="summary-ship">—</span>
+					</div>
 
-                    <!-- Voucher input -->
-                    <div class="mb-4">
-                        <div class="d-flex gap-2">
-                            <input type="text" id="voucherInput" placeholder="Mã giảm giá"
-                                   class="form-control-clean" style="flex:1;font-size:0.82rem">
-                            <button onclick="applyVoucher()" class="btn-black" style="padding:9px 14px;font-size:0.75rem">Áp dụng</button>
-                        </div>
-                        <div id="voucher-msg" style="font-size:0.78rem;margin-top:6px;min-height:16px"></div>
-                    </div>
+					<!-- Voucher input -->
+					<div class="mb-4">
+						<div class="d-flex gap-2">
+							<input type="text" id="voucherInput" placeholder="Mã giảm giá"
+								   class="form-control-clean" style="flex:1;font-size:0.82rem">
+							<button onclick="applyVoucher()" class="btn-black" style="padding:9px 14px;font-size:0.75rem">Áp dụng</button>
+						</div>
+						<div id="voucher-msg" style="font-size:0.78rem;margin-top:6px;min-height:16px"></div>
+					</div>
 
-                    <div class="d-flex justify-content-between mb-1">
-                        <span style="font-size:1rem;font-weight:800;text-transform:uppercase;letter-spacing:0.04em">Tổng cộng</span>
-                        <span style="font-size:1.25rem;font-weight:900" id="summary-total">0₫</span>
-                    </div>
-                    <div style="font-size:0.72rem;color:#888;margin-bottom:24px">Đã bao gồm thuế VAT</div>
+					<div class="d-flex justify-content-between mb-1">
+						<span style="font-size:1rem;font-weight:800;text-transform:uppercase;letter-spacing:0.04em">Tổng cộng</span>
+						<span style="font-size:1.25rem;font-weight:900" id="summary-total">0₫</span>
+					</div>
+					<div style="font-size:0.72rem;color:#888;margin-bottom:24px">Đã bao gồm thuế VAT</div>
 
-                    <a asp-controller="Checkout" asp-action="Index" id="checkout-btn" class="add-to-cart-btn d-block text-center">
-                        Tiến hành thanh toán
-                    </a>
+					<button type="button" onclick="proceedToCheckout()" id="checkout-btn" class="add-to-cart-btn d-block text-center w-100 border-0">
+						Tiến hành thanh toán
+					</button>
 
-                    <!-- Trust badges -->
-                    <div class="d-flex gap-3 mt-4 justify-content-center" style="font-size:0.72rem;color:#888;flex-wrap:wrap;text-align:center">
-                        <span><i class="bi bi-shield-lock me-1"></i>Bảo mật</span>
-                        <span><i class="bi bi-arrow-repeat me-1"></i>Đổi trả 30 ngày</span>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
+					<!-- Trust badges -->
+					<div class="d-flex gap-3 mt-4 justify-content-center" style="font-size:0.72rem;color:#888;flex-wrap:wrap;text-align:center">
+						<span><i class="bi bi-shield-lock me-1"></i>Bảo mật</span>
+						<span><i class="bi bi-arrow-repeat me-1"></i>Đổi trả 30 ngày</span>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
 </div>
 
 @section Scripts {
-<script>
-const SHIPPING_THRESHOLD = 500000;
-const SHIPPING_FEE = 30000;
-let cart = [];
+	<script>
+		const SHIPPING_THRESHOLD = 500000;
+		const SHIPPING_FEE = 30000;
+		let cart = [];
 
-function loadCart() {
-    cart = JSON.parse(localStorage.getItem('shoes_shop_cart')) || [];
-    document.getElementById('cart-loading').classList.add('d-none');
-    if (!cart.length) {
-        document.getElementById('cart-empty').classList.remove('d-none');
-        return;
-    }
-    document.getElementById('cart-content').classList.remove('d-none');
-    renderItems();
-    updateSummary();
-}
+		function loadCart() {
+			cart = JSON.parse(localStorage.getItem('shoes_shop_cart')) || [];
+			document.getElementById('cart-loading').classList.add('d-none');
+			if (!cart.length) {
+				document.getElementById('cart-empty').classList.remove('d-none');
+				return;
+			}
+			document.getElementById('cart-content').classList.remove('d-none');
+			renderItems();
+			updateSummary();
+		}
 
-function renderItems() {
-    let html = '';
-    cart.forEach((item, idx) => {
-        const subtotal = item.salePrice * item.quantity;
-        html += `
-        <div class="cart-row" id="row-${idx}"
-             style="display:flex;align-items:flex-start;gap:16px;
-                    padding:20px 0;border-bottom:1px solid #f3f3f3">
-            <a href="/Products/Detail/${item.productId}" style="flex-shrink:0">
-                <img src="${item.primaryImageUrl || 'https://placehold.co/80x80/f3f3f3/888?text=?'}"
-                     alt="${item.productName}"
-                     style="width:80px;height:80px;object-fit:cover;display:block"
-                     onerror="this.src='https://placehold.co/80x80/f3f3f3/888?text=?'">
-            </a>
-            <div style="flex:1;min-width:0">
-                <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
-                    <div>
-                        <a href="/Products/Detail/${item.productId}"
-                           style="font-weight:700;font-size:0.88rem;color:#000;text-decoration:none;
-                                  text-transform:uppercase;letter-spacing:0.02em;display:block">
-                            ${item.productName}
-                        </a>
-                        <div style="font-size:0.75rem;color:#888;margin-top:4px">
-                            ${item.colorName ? 'Màu: <strong style="color:#555">'+item.colorName+'</strong>' : ''}
-                            ${item.colorName && item.sizeName ? ' &nbsp;|&nbsp; ' : ''}
-                            ${item.sizeName  ? 'Size: <strong style="color:#555">'+item.sizeName+'</strong>'  : ''}
-                        </div>
-                        <div style="font-weight:800;font-size:0.92rem;margin-top:8px">
-                            ${(item.salePrice||0).toLocaleString('vi-VN')}₫
-                        </div>
-                    </div>
-                    <button onclick="removeItem(${idx})"
-                            style="border:none;background:none;cursor:pointer;padding:2px;color:#bbb;font-size:1rem;flex-shrink:0"
-                            title="Xóa"><i class="bi bi-x-lg"></i></button>
-                </div>
-                <!-- Qty + subtotal row -->
-                <div style="display:flex;align-items:center;justify-content:space-between;margin-top:12px">
-                    <div style="display:inline-flex;align-items:center;border:1px solid #ddd">
-                        <button onclick="changeQty(${idx}, -1)"
-                                style="width:32px;height:32px;border:none;background:none;cursor:pointer;font-size:1.1rem;display:flex;align-items:center;justify-content:center">−</button>
-                        <span style="width:36px;text-align:center;font-weight:700;font-size:0.88rem" id="qty-${idx}">${item.quantity}</span>
-                        <button onclick="changeQty(${idx}, 1)"
-                                style="width:32px;height:32px;border:none;background:none;cursor:pointer;font-size:1.1rem;display:flex;align-items:center;justify-content:center">+</button>
-                    </div>
-                    <span style="font-size:0.85rem;font-weight:700;color:#000" id="sub-${idx}">${subtotal.toLocaleString('vi-VN')}₫</span>
-                </div>
-            </div>
-        </div>`;
-    });
-    document.getElementById('cart-items').innerHTML = html;
-}
+		function renderItems() {
+			let html = '';
+			cart.forEach((item, idx) => {
+				const subtotal = item.salePrice * item.quantity;
+				html += `
+				<div class="cart-row" id="row-${idx}"
+					 style="display:flex;align-items:flex-start;gap:16px;
+							padding:20px 0;border-bottom:1px solid #f3f3f3">
+					<a href="/Products/Detail/${item.productId}" style="flex-shrink:0">
+						<img src="${item.primaryImageUrl || 'https://placehold.co/80x80/f3f3f3/888?text=?'}"
+							 alt="${item.productName}"
+							 style="width:80px;height:80px;object-fit:cover;display:block"
+							 onerror="this.src='https://placehold.co/80x80/f3f3f3/888?text=?'">
+					</a>
+					<div style="flex:1;min-width:0">
+						<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
+							<div>
+								<a href="/Products/Detail/${item.productId}"
+								   style="font-weight:700;font-size:0.88rem;color:#000;text-decoration:none;
+										  text-transform:uppercase;letter-spacing:0.02em;display:block">
+									${item.productName}
+								</a>
+								<div style="font-size:0.75rem;color:#888;margin-top:4px">
+									${item.colorName ? 'Màu: <strong style="color:#555">'+item.colorName+'</strong>' : ''}
+									${item.colorName && item.sizeName ? ' &nbsp;|&nbsp; ' : ''}
+									${item.sizeName  ? 'Size: <strong style="color:#555">'+item.sizeName+'</strong>'  : ''}
+								</div>
+								<div style="font-weight:800;font-size:0.92rem;margin-top:8px">
+									${(item.salePrice||0).toLocaleString('vi-VN')}₫
+								</div>
+							</div>
+							<button onclick="removeItem(${idx})"
+									style="border:none;background:none;cursor:pointer;padding:2px;color:#bbb;font-size:1rem;flex-shrink:0"
+									title="Xóa"><i class="bi bi-x-lg"></i></button>
+						</div>
+						<!-- Qty + subtotal row -->
+						<div style="display:flex;align-items:center;justify-content:space-between;margin-top:12px">
+							<div style="display:inline-flex;align-items:center;border:1px solid #ddd">
+								<button onclick="changeQty(${idx}, -1)"
+										style="width:32px;height:32px;border:none;background:none;cursor:pointer;font-size:1.1rem;display:flex;align-items:center;justify-content:center">−</button>
+								<span style="width:36px;text-align:center;font-weight:700;font-size:0.88rem" id="qty-${idx}">${item.quantity}</span>
+								<button onclick="changeQty(${idx}, 1)"
+										style="width:32px;height:32px;border:none;background:none;cursor:pointer;font-size:1.1rem;display:flex;align-items:center;justify-content:center">+</button>
+							</div>
+							<span style="font-size:0.85rem;font-weight:700;color:#000" id="sub-${idx}">${subtotal.toLocaleString('vi-VN')}₫</span>
+						</div>
+					</div>
+				</div>`;
+			});
+			document.getElementById('cart-items').innerHTML = html;
+		}
 
-function changeQty(idx, delta) {
-    cart[idx].quantity = Math.max(1, cart[idx].quantity + delta);
-    saveCart();
-    document.getElementById('qty-' + idx).textContent = cart[idx].quantity;
-    document.getElementById('sub-' + idx).textContent = (cart[idx].salePrice * cart[idx].quantity).toLocaleString('vi-VN') + '₫';
-    updateSummary();
-}
+		function changeQty(idx, delta) {
+			cart[idx].quantity = Math.max(1, cart[idx].quantity + delta);
+			saveCart();
+			document.getElementById('qty-' + idx).textContent = cart[idx].quantity;
+			document.getElementById('sub-' + idx).textContent = (cart[idx].salePrice * cart[idx].quantity).toLocaleString('vi-VN') + '₫';
+			updateSummary();
+		}
 
-function removeItem(idx) {
-    cart.splice(idx, 1);
-    saveCart();
-    if (!cart.length) {
-        document.getElementById('cart-content').classList.add('d-none');
-        document.getElementById('cart-empty').classList.remove('d-none');
-        return;
-    }
-    renderItems();
-    updateSummary();
-}
+		function removeItem(idx) {
+			cart.splice(idx, 1);
+			saveCart();
+			if (!cart.length) {
+				document.getElementById('cart-content').classList.add('d-none');
+				document.getElementById('cart-empty').classList.remove('d-none');
+				return;
+			}
+			renderItems();
+			updateSummary();
+		}
 
-function clearCart() {
-    if (!confirm('Bạn có chắc muốn xóa toàn bộ giỏ hàng?')) return;
-    cart = [];
-    saveCart();
-    document.getElementById('cart-content').classList.add('d-none');
-    document.getElementById('cart-empty').classList.remove('d-none');
-}
+		function clearCart() {
+			if (!confirm('Bạn có chắc muốn xóa toàn bộ giỏ hàng?')) return;
+			cart = [];
+			saveCart();
+			document.getElementById('cart-content').classList.add('d-none');
+			document.getElementById('cart-empty').classList.remove('d-none');
+		}
 
-function saveCart() {
-    localStorage.setItem('shoes_shop_cart', JSON.stringify(cart));
-    const total = cart.reduce((s,i) => s+i.quantity, 0);
-    const badge = document.getElementById('cart-count');
-    if (badge) { badge.textContent = total; badge.style.display = total > 0 ? 'flex' : 'none'; }
-}
+		function saveCart() {
+			localStorage.setItem('shoes_shop_cart', JSON.stringify(cart));
+			const total = cart.reduce((s,i) => s+i.quantity, 0);
+			const badge = document.getElementById('cart-count');
+			if (badge) { badge.textContent = total; badge.style.display = total > 0 ? 'flex' : 'none'; }
+		}
 
-function updateSummary() {
-    const subtotal  = cart.reduce((s,i) => s + (i.salePrice||0) * i.quantity, 0);
-    const itemCount = cart.reduce((s,i) => s + i.quantity, 0);
-    const shipping  = subtotal >= SHIPPING_THRESHOLD ? 0 : SHIPPING_FEE;
-    const total     = subtotal + shipping;
+		function updateSummary() {
+			const subtotal  = cart.reduce((s,i) => s + (i.salePrice||0) * i.quantity, 0);
+			const itemCount = cart.reduce((s,i) => s + i.quantity, 0);
+			const shipping  = subtotal >= SHIPPING_THRESHOLD ? 0 : SHIPPING_FEE;
+			const total     = subtotal + shipping;
 
-    document.getElementById('summary-count').textContent    = itemCount;
-    document.getElementById('summary-subtotal').textContent = subtotal.toLocaleString('vi-VN') + '₫';
-    const shipEl = document.getElementById('summary-ship');
-    shipEl.textContent = shipping === 0 ? 'Miễn phí' : shipping.toLocaleString('vi-VN') + '₫';
-    shipEl.style.color = shipping === 0 ? '#2d6a4f' : '#000';
-    document.getElementById('summary-total').textContent    = total.toLocaleString('vi-VN') + '₫';
+			document.getElementById('summary-count').textContent    = itemCount;
+			document.getElementById('summary-subtotal').textContent = subtotal.toLocaleString('vi-VN') + '₫';
+			const shipEl = document.getElementById('summary-ship');
+			shipEl.textContent = shipping === 0 ? 'Miễn phí' : shipping.toLocaleString('vi-VN') + '₫';
+			shipEl.style.color = shipping === 0 ? '#2d6a4f' : '#000';
+			document.getElementById('summary-total').textContent    = total.toLocaleString('vi-VN') + '₫';
 
-    sessionStorage.setItem('cart_subtotal', subtotal);
-    sessionStorage.setItem('cart_shipping', shipping);
-    sessionStorage.setItem('cart_total',    total);
-}
+			sessionStorage.setItem('cart_subtotal', subtotal);
+			sessionStorage.setItem('cart_shipping', shipping);
+			sessionStorage.setItem('cart_total',    total);
+		}
 
-function applyVoucher() {
-    const code = document.getElementById('voucherInput').value.trim();
-    const msg  = document.getElementById('voucher-msg');
-    if (!code) { msg.innerHTML = '<span style="color:#e63946">Vui lòng nhập mã giảm giá.</span>'; return; }
-    msg.innerHTML = '<span style="color:#888">Đang kiểm tra...</span>';
-    setTimeout(() => {
-        msg.innerHTML = '<span style="color:#e63946">Mã không hợp lệ hoặc đã hết hạn.</span>';
-    }, 800);
-}
+		function applyVoucher() {
+			const code = document.getElementById('voucherInput').value.trim();
+			const msg  = document.getElementById('voucher-msg');
+			if (!code) { msg.innerHTML = '<span style="color:#e63946">Vui lòng nhập mã giảm giá.</span>'; return; }
+			msg.innerHTML = '<span style="color:#888">Đang kiểm tra...</span>';
+			setTimeout(() => {
+				msg.innerHTML = '<span style="color:#e63946">Mã không hợp lệ hoặc đã hết hạn.</span>';
+			}, 800);
+		}
 
-loadCart();
-</script>
+		loadCart();
+				// Hàm mới: Đồng bộ dữ liệu localStorage vào Session trước khi sang trang Checkout
+				function proceedToCheckout() {
+					if (!cart || cart.length === 0) {
+						alert("Giỏ hàng của bạn đang trống!");
+						return;
+					}
+
+					// Nếu giỏ hàng có đồ, chuyển hướng thẳng sang trang Checkout.
+					// Nếu chưa đăng nhập, thuộc tính [Authorize] ở Controller bên trên sẽ tự bắt được và chuyển hướng đến trang Đăng nhập.
+					window.location.href = '/Checkout';
+				}
+	</script>
 }
