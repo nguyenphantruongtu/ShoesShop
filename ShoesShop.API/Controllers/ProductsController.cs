@@ -1,31 +1,33 @@
-﻿using AutoMapper;
 using AutoMapper.QueryableExtensions;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.OData.Query;
 using ShoesShop.Business.Interfaces;
-using ShoesShop.Data.Interfaces;
+using ShoesShop.Data.Repositories.Interfaces;
 using ShoesShop.Shared.DTOs;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 
 namespace ShoesShop.API.Controllers;
 
+/// <summary>
+/// F4. Product Browse (Guest / Customer)
+/// UC-01: GET /api/products/featured   — sản phẩm nổi bật (trang chủ)
+/// UC-02: GET /api/products            — danh sách + OData filter/sort/paging
+/// UC-03: GET /api/products/search     — tìm kiếm theo keyword
+/// UC-04: GET /api/products/{id}       — chi tiết sản phẩm
+/// </summary>
 [ApiController]
-[Route("api/[controller]")]
+[Route("api/products")]
 public class ProductsController : ControllerBase
 {
     private readonly IProductService _productService;
-    private readonly IProductRepository _productRepository; 
+    private readonly IProductRepository _productRepository;
 
-    // Constructor đã được cập nhật nhận IProductRepository qua DI
     public ProductsController(IProductService productService, IProductRepository productRepository)
     {
-        _productService = productService;
+        _productService    = productService;
         _productRepository = productRepository;
     }
 
-    // UC-01: Lấy danh sách sản phẩm nổi bật ở Trang chủ
+    /// <summary>UC-01: Sản phẩm nổi bật cho trang chủ</summary>
     [HttpGet("featured")]
     public async Task<IActionResult> GetFeatured()
     {
@@ -33,24 +35,22 @@ public class ProductsController : ControllerBase
         return Ok(new ApiResponse<IEnumerable<ProductDto>> { Success = true, Data = result });
     }
 
-    // UC-02: Lấy danh sách toàn bộ sản phẩm hỗ trợ OData
+    /// <summary>UC-02: Danh sách sản phẩm hỗ trợ OData (filter/sort/paging)</summary>
     [HttpGet]
-    [EnableQuery(MaxTop = 100, AllowedQueryOptions = AllowedQueryOptions.All)] 
+    [EnableQuery(MaxTop = 100, AllowedQueryOptions = AllowedQueryOptions.All)]
     public IActionResult Get()
     {
-        // Gọi thông qua Interface cực kỳ mượt mà và đúng kiến trúc
-        var entityQuery = _productRepository.GetQueryable().Where(p => p.IsActive);
-
-        // 2. Chuyển đổi cấu trúc sang DTO sử dụng AutoMapper dạng Queryable
-        var dtoQuery = entityQuery.ProjectTo<ProductDto>(
-            HttpContext.RequestServices.GetRequiredService<AutoMapper.IConfigurationProvider>()
-        );
-
-        // 3. Trả về đúng kiểu OkObjectResult cho OData tự động xử lý filter
+        var dtoQuery = _productRepository
+            .GetQueryable()
+            .Where(p => p.IsActive)
+            .ProjectTo<ProductDto>(
+                HttpContext.RequestServices
+                    .GetRequiredService<AutoMapper.IConfigurationProvider>()
+            );
         return Ok(dtoQuery);
     }
 
-    // UC-03: Tìm kiếm sản phẩm qua keyword
+    /// <summary>UC-03: Tìm kiếm sản phẩm theo keyword</summary>
     [HttpGet("search")]
     public async Task<IActionResult> Search([FromQuery] string keyword)
     {
@@ -58,17 +58,13 @@ public class ProductsController : ControllerBase
         return Ok(new ApiResponse<IEnumerable<ProductDto>> { Success = true, Data = result });
     }
 
-    // UC-04: Lấy thông tin chi tiết một sản phẩm theo ID (F5 chuẩn đa tầng)
-    [HttpGet("{id}")]
+    /// <summary>UC-04: Chi tiết sản phẩm (slider ảnh, variant size/màu, stock)</summary>
+    [HttpGet("{id:int}")]
     public async Task<IActionResult> GetProductById(int id)
     {
         var result = await _productService.GetProductDetailAsync(id);
-
         if (result == null)
-        {
-            return NotFound(new ApiResponse<object> { Success = false, Message = "Không tìm thấy sản phẩm" });
-        }
-
+            return NotFound(new ApiResponse<object> { Success = false, Message = "Không tìm thấy sản phẩm." });
         return Ok(new ApiResponse<ProductDetailDto> { Success = true, Data = result });
     }
 }

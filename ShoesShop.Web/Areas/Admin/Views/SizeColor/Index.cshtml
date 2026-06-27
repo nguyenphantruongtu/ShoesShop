@@ -1,0 +1,146 @@
+@using System.Text.Json
+@{ ViewData["Title"] = "Size & Màu sắc"; }
+
+@{
+    JsonElement? sizes  = ViewBag.Sizes  is JsonElement se ? se : (JsonElement?)null;
+    JsonElement? colors = ViewBag.Colors is JsonElement ce ? ce : (JsonElement?)null;
+}
+
+<div class="page-header"><h3><i class="bi bi-palette2 me-2 text-primary"></i>Size & Màu sắc</h3><p>Quản lý kích cỡ và màu sắc sản phẩm</p></div>
+
+<div class="row g-4">
+
+  @* ── SIZES ── *@
+  <div class="col-lg-6">
+    <div class="card border-0 shadow-sm rounded-4">
+      <div class="card-body p-4">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h5 class="fw-bold mb-0"><i class="bi bi-rulers me-2 text-primary"></i>Kích cỡ (Size)</h5>
+          <button class="btn btn-primary btn-sm rounded-3 px-3" data-bs-toggle="modal" data-bs-target="#sizeModal" onclick="openSizeModal(0)">
+            <i class="bi bi-plus-lg me-1"></i>Thêm
+          </button>
+        </div>
+        <table class="table table-hover align-middle mb-0">
+          <thead class="table-light small text-uppercase"><tr><th>#</th><th>Giá trị</th><th>Thứ tự</th><th class="text-end">Thao tác</th></tr></thead>
+          <tbody>
+          @if (sizes is JsonElement s && s.ValueKind == JsonValueKind.Array)
+          {
+              foreach (var sz in s.EnumerateArray())
+              {
+                  var sid  = sz.GetProperty("sizeId").GetInt32();
+                  var val  = sz.GetProperty("sizeValue").GetString();
+                  var ord  = sz.GetProperty("displayOrder").GetInt32();
+                  <tr>
+                    <td class="text-muted small">@sid</td>
+                    <td class="fw-medium"><span class="badge bg-light text-dark border rounded-pill px-3">@val</span></td>
+                    <td class="text-muted">@ord</td>
+                    <td class="text-end">
+                      <button class="btn btn-sm btn-outline-primary rounded-3 me-1" onclick="openSizeModal(@sid,'@val',@ord)" data-bs-toggle="modal" data-bs-target="#sizeModal"><i class="bi bi-pencil"></i></button>
+                      <form asp-action="DeleteSize" asp-route-id="@sid" method="post" class="d-inline" onsubmit="return confirm('Xóa size này?')">@Html.AntiForgeryToken()<button type="submit" class="btn btn-sm btn-outline-danger rounded-3"><i class="bi bi-trash"></i></button></form>
+                    </td>
+                  </tr>
+              }
+          }
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  @* ── COLORS ── *@
+  <div class="col-lg-6">
+    <div class="card border-0 shadow-sm rounded-4">
+      <div class="card-body p-4">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h5 class="fw-bold mb-0"><i class="bi bi-palette me-2 text-primary"></i>Màu sắc</h5>
+          <button class="btn btn-primary btn-sm rounded-3 px-3" data-bs-toggle="modal" data-bs-target="#colorModal" onclick="openColorModal(0)">
+            <i class="bi bi-plus-lg me-1"></i>Thêm
+          </button>
+        </div>
+        <table class="table table-hover align-middle mb-0">
+          <thead class="table-light small text-uppercase"><tr><th>Màu</th><th>Tên</th><th>Hex</th><th class="text-end">Thao tác</th></tr></thead>
+          <tbody>
+          @if (colors is JsonElement c && c.ValueKind == JsonValueKind.Array)
+          {
+              foreach (var cl in c.EnumerateArray())
+              {
+                  var cid  = cl.GetProperty("colorId").GetInt32();
+                  var nm   = cl.GetProperty("colorName").GetString();
+                  var hex  = cl.TryGetProperty("hexCode", out var h) && h.ValueKind != JsonValueKind.Null ? h.GetString() : null;
+                  <tr>
+                    <td><span class="color-swatch" style="background:@(hex ?? "#ccc")"></span></td>
+                    <td class="fw-medium">@nm</td>
+                    <td><code class="small">@(hex ?? "—")</code></td>
+                    <td class="text-end">
+                      <button class="btn btn-sm btn-outline-primary rounded-3 me-1" onclick="openColorModal(@cid,'@nm?.Replace("'","\\'")','@hex')" data-bs-toggle="modal" data-bs-target="#colorModal"><i class="bi bi-pencil"></i></button>
+                      <form asp-action="DeleteColor" asp-route-id="@cid" method="post" class="d-inline" onsubmit="return confirm('Xóa màu này?')">@Html.AntiForgeryToken()<button type="submit" class="btn btn-sm btn-outline-danger rounded-3"><i class="bi bi-trash"></i></button></form>
+                    </td>
+                  </tr>
+              }
+          }
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+@* Size Modal *@
+<div class="modal fade" id="sizeModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-sm">
+    <div class="modal-content border-0 shadow-lg rounded-4">
+      <div class="modal-header border-0"><h5 class="modal-title fw-bold" id="sizeMTitle">Size</h5><button class="btn-close" data-bs-dismiss="modal"></button></div>
+      <form id="sizeForm" method="post">@Html.AntiForgeryToken()
+        <div class="modal-body p-4">
+          <div class="mb-3"><label class="form-label fw-semibold">Giá trị <span class="text-danger">*</span></label><input type="text" name="sizeValue" id="fSzVal" class="form-control rounded-3" required maxlength="20"></div>
+          <div><label class="form-label fw-semibold">Thứ tự hiển thị</label><input type="number" name="displayOrder" id="fSzOrd" class="form-control rounded-3" value="0" min="0"></div>
+        </div>
+        <div class="modal-footer border-0 justify-content-center gap-2">
+          <button type="button" class="btn btn-light rounded-3 px-4" data-bs-dismiss="modal">Hủy</button>
+          <button type="submit" class="btn btn-primary rounded-3 px-4">Lưu</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+@* Color Modal *@
+<div class="modal fade" id="colorModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-sm">
+    <div class="modal-content border-0 shadow-lg rounded-4">
+      <div class="modal-header border-0"><h5 class="modal-title fw-bold" id="colorMTitle">Màu sắc</h5><button class="btn-close" data-bs-dismiss="modal"></button></div>
+      <form id="colorForm" method="post">@Html.AntiForgeryToken()
+        <div class="modal-body p-4">
+          <div class="mb-3"><label class="form-label fw-semibold">Tên màu <span class="text-danger">*</span></label><input type="text" name="colorName" id="fClNm" class="form-control rounded-3" required maxlength="50"></div>
+          <div><label class="form-label fw-semibold">Mã màu (Hex)</label>
+            <div class="input-group"><input type="color" name="hexCode" id="fClHex" class="form-control form-control-color rounded-3" style="width:50px"><input type="text" id="fClHexText" class="form-control rounded-3" placeholder="#RRGGBB" oninput="document.getElementById('fClHex').value=this.value"></div>
+          </div>
+        </div>
+        <div class="modal-footer border-0 justify-content-center gap-2">
+          <button type="button" class="btn btn-light rounded-3 px-4" data-bs-dismiss="modal">Hủy</button>
+          <button type="submit" class="btn btn-primary rounded-3 px-4">Lưu</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+@section Scripts {
+<script>
+function openSizeModal(id, val='', ord=0) {
+    document.getElementById('sizeMTitle').textContent = id ? 'Sửa size' : 'Thêm size';
+    document.getElementById('sizeForm').action = id ? `/Admin/SizeColor/EditSize/${id}` : '/Admin/SizeColor/CreateSize';
+    document.getElementById('fSzVal').value = val;
+    document.getElementById('fSzOrd').value = ord;
+}
+function openColorModal(id, name='', hex='') {
+    document.getElementById('colorMTitle').textContent = id ? 'Sửa màu' : 'Thêm màu';
+    document.getElementById('colorForm').action = id ? `/Admin/SizeColor/EditColor/${id}` : '/Admin/SizeColor/CreateColor';
+    document.getElementById('fClNm').value = name;
+    const h = hex || '#000000';
+    document.getElementById('fClHex').value = h;
+    document.getElementById('fClHexText').value = h;
+}
+document.getElementById('fClHex')?.addEventListener('input', e => document.getElementById('fClHexText').value = e.target.value);
+</script>
+}

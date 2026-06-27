@@ -1,0 +1,114 @@
+@using System.Text.Json
+@model JsonElement?
+@{ ViewData["Title"] = "Người dùng"; int page = ViewBag.Page ?? 1; }
+
+<div class="page-header"><h3><i class="bi bi-people me-2 text-primary"></i>Quản lý người dùng</h3><p>Xem, khóa/mở và phân quyền tài khoản</p></div>
+
+<form method="get" class="card border-0 shadow-sm rounded-4 p-3 mb-4">
+    <div class="row g-2">
+        <div class="col-md-6"><input type="text" name="search" class="form-control rounded-3" placeholder="Tìm email / họ tên..." value="@ViewBag.Search"></div>
+        <div class="col-md-2 d-flex gap-2">
+            <button type="submit" class="btn btn-primary rounded-3 flex-grow-1"><i class="bi bi-search me-1"></i>Tìm</button>
+            <a href="/Admin/Users" class="btn btn-outline-secondary rounded-3"><i class="bi bi-x-lg"></i></a>
+        </div>
+    </div>
+</form>
+
+@if (Model is JsonElement data && data.ValueKind != JsonValueKind.Undefined)
+{
+    var users      = data.GetProperty("users");
+    var total      = data.GetProperty("totalCount").GetInt32();
+    var totalPages = data.GetProperty("totalPages").GetInt32();
+
+    <div class="card border-0 shadow-sm rounded-4">
+      <div class="card-body p-0">
+        <div class="px-4 py-3 border-bottom"><span class="text-muted small">Tổng <strong>@total</strong> người dùng</span></div>
+        <table class="table admin-table mb-0">
+          <thead><tr>
+            <th class="ps-4">Email</th><th>Họ tên</th><th>Số điện thoại</th><th>Vai trò</th><th>Trạng thái</th><th>Ngày tạo</th><th class="text-end pe-4">Thao tác</th>
+          </tr></thead>
+          <tbody>
+          @if (users.ValueKind == JsonValueKind.Array)
+              foreach (var u in users.EnumerateArray())
+              {
+                  var uid     = u.GetProperty("userId").GetInt32();
+                  var email   = u.GetProperty("email").GetString();
+                  var fname   = u.GetProperty("fullName").GetString();
+                  var phone   = u.TryGetProperty("phone", out var ph) && ph.ValueKind != JsonValueKind.Null ? ph.GetString() : "—";
+                  var role    = u.GetProperty("role").GetString();
+                  var active  = u.GetProperty("isActive").GetBoolean();
+                  var created = u.GetProperty("createdAt").GetDateTime();
+                  var roleBadge = role switch { "Admin"=>"bg-danger","Staff"=>"bg-warning text-dark",_=>"bg-primary" };
+                  <tr>
+                    <td class="ps-4 small"><div class="fw-medium">@email</div></td>
+                    <td class="small">@fname</td>
+                    <td class="small text-muted">@phone</td>
+                    <td><span class="badge rounded-pill px-3 @roleBadge">@role</span></td>
+                    <td>@if(active){<span class="badge bg-success rounded-pill px-3">Hoạt động</span>}else{<span class="badge bg-danger rounded-pill px-3">Bị khóa</span>}</td>
+                    <td class="text-muted small">@created.ToString("dd/MM/yyyy")</td>
+                    <td class="text-end pe-4 d-flex gap-1 justify-content-end align-items-center">
+                      @if (active)
+                      {
+                          <form asp-action="Lock" asp-route-id="@uid" method="post" class="d-inline" onsubmit="return confirm('Khóa tài khoản này?')">
+                            @Html.AntiForgeryToken()
+                            <button type="submit" class="btn btn-sm btn-outline-danger rounded-3" title="Khóa"><i class="bi bi-lock"></i></button>
+                          </form>
+                      }
+                      else
+                      {
+                          <form asp-action="Unlock" asp-route-id="@uid" method="post" class="d-inline">
+                            @Html.AntiForgeryToken()
+                            <button type="submit" class="btn btn-sm btn-outline-success rounded-3" title="Mở khóa"><i class="bi bi-unlock"></i></button>
+                          </form>
+                      }
+                      <button class="btn btn-sm btn-outline-secondary rounded-3" title="Đổi vai trò"
+                              onclick="openRoleModal(@uid,'@role')" data-bs-toggle="modal" data-bs-target="#roleModal">
+                          <i class="bi bi-shield-half"></i>
+                      </button>
+                    </td>
+                  </tr>
+              }
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    @if (totalPages > 1)
+    {
+        <nav class="mt-4 d-flex justify-content-center"><ul class="pagination">
+          @for (int i = 1; i <= totalPages; i++)
+          { <li class="page-item @(i==page?"active":"")"><a class="page-link rounded-3 mx-1" asp-action="Index" asp-route-search="@ViewBag.Search" asp-route-page="@i">@i</a></li> }
+        </ul></nav>
+    }
+}
+
+<div class="modal fade" id="roleModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-sm">
+    <div class="modal-content border-0 shadow-lg rounded-4">
+      <div class="modal-header border-0"><h5 class="modal-title fw-bold">Đổi vai trò</h5><button class="btn-close" data-bs-dismiss="modal"></button></div>
+      <form id="roleForm" method="post">@Html.AntiForgeryToken()
+        <div class="modal-body p-4">
+          <label class="form-label fw-semibold">Vai trò mới</label>
+          <select name="roleName" id="fRole" class="form-select rounded-3">
+            <option value="Customer">Customer</option>
+            <option value="Staff">Staff</option>
+            <option value="Admin">Admin</option>
+          </select>
+        </div>
+        <div class="modal-footer border-0 justify-content-center gap-2">
+          <button type="button" class="btn btn-light rounded-3 px-4" data-bs-dismiss="modal">Hủy</button>
+          <button type="submit" class="btn btn-primary rounded-3 px-4">Lưu</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+@section Scripts {
+<script>
+function openRoleModal(uid, currentRole) {
+    document.getElementById('roleForm').action = `/Admin/Users/ChangeRole/${uid}`;
+    document.getElementById('fRole').value = currentRole;
+}
+</script>
+}

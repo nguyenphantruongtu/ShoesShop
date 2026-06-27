@@ -1,42 +1,33 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
 using ShoesShop.Data.Context;
 using ShoesShop.Data.Entities;
-using ShoesShop.Data.Interfaces;
-using System;
-using System.Threading.Tasks;
+using ShoesShop.Data.Repositories.Interfaces;
 
 namespace ShoesShop.Data.Repositories;
 
 public class OrderRepository : IOrderRepository
 {
-    private readonly ShoeStoreDbContext _context;
+    private readonly ShoeStoreDbContext _ctx;
     private IDbContextTransaction? _currentTransaction;
 
-    public OrderRepository(ShoeStoreDbContext context)
-    {
-        _context = context;
-    }
+    public OrderRepository(ShoeStoreDbContext ctx) => _ctx = ctx;
 
-    // Thực hiện thêm mới một đối tượng (Order hoặc OrderDetail) vào DB Context
+    // ── Generic Add + SaveChanges (dùng cho CreateOrderAsync) ───────────────
+
     public async Task AddAsync<T>(T entity) where T : class
     {
-        await _context.Set<T>().AddAsync(entity);
+        await _ctx.Set<T>().AddAsync(entity);
     }
 
-    // Lưu tất cả các thay đổi từ RAM xuống Database thực tế
     public async Task<int> SaveChangesAsync()
-    {
-        return await _context.SaveChangesAsync();
-    }
+        => await _ctx.SaveChangesAsync();
 
-    // Kích hoạt Transaction (mở một phiên làm việc an toàn)
+    // ── Transaction management ───────────────────────────────────────────────
+
     public async Task BeginTransactionAsync()
-    {
-        _currentTransaction = await _context.Database.BeginTransactionAsync();
-    }
+        => _currentTransaction = await _ctx.Database.BeginTransactionAsync();
 
-    // Chốt dữ liệu, lưu chính thức khi toàn bộ các bước thành công
     public async Task CommitTransactionAsync()
     {
         if (_currentTransaction != null)
@@ -47,7 +38,6 @@ public class OrderRepository : IOrderRepository
         }
     }
 
-    // Hủy bỏ toàn bộ các bước đã làm trước đó nếu giữa chừng xảy ra lỗi
     public async Task RollbackTransactionAsync()
     {
         if (_currentTransaction != null)
@@ -57,35 +47,130 @@ public class OrderRepository : IOrderRepository
             _currentTransaction = null;
         }
     }
-    public async Task<Order?> GetOrderWithItemsAsync(int orderId)
+
+    // ── UC-31: Danh sách đơn hàng (Staff) ───────────────────────────────────
+
+    public async Task<(List<Order> Orders, int TotalCount)> GetPaginatedAsync(
+        string? search, string? status, int page, int pageSize)
     {
-        // Đảm bảo Include đúng thực thể OrderItems để lấy danh sách sản phẩm cần hoàn kho
-        return await _context.Orders
+        var query = _ctx.Orders
+            .Include(o => o.User)
+            .Include(o => o.HandledByStaff)
+            .Include(o => o.OrderItems)
+            .AsQueryable();
+
+        if (!string.IsNullOrWhiteSpace(status))
+            query = query.Where(o => o.OrderStatus == status);
+
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            var kw = search.Trim().ToLower();
+            query = query.Where(o =>
+                o.OrderCode.ToLower().Contains(kw) ||
+                o.RecipientPhone.Contains(kw));
+        }
+
+        var total  = await query.CountAsync();
+        var orders = await query
+            .OrderByDescending(o => o.CreatedAt)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync();
+
+        return (orders, total);
+    }
+
+    // ── UC-32: Chi tiết đơn hàng (full includes) ────────────────────────────
+
+    public async Task<Order?> GetByIdWithDetailsAsync(int orderId)
+        => await _ctx.Orders
+            .Include(o => o.User)
+            .Include(o => o.HandledByStaff)
+            .Include(o => o.OrderItems)
+                .ThenInclude(oi => oi.Variant)
+            .Include(o => o.Shipment)
+            .Include(o => o.OrderStatusHistories.OrderBy(h => h.ChangedAt))
+                .ThenInclude(h => h.ChangedByUser)
+            .FirstOrDefaultAsync(o => o.OrderId == orderId);
+
+    public async Task<Order?> GetByIdAsync(int orderId)
+        => await _ctx.Orders
             .Include(o => o.OrderItems)
             .FirstOrDefaultAsync(o => o.OrderId == orderId);
-    }
-    // 🌟 1. Hiện thực hàm GetByIdAsync kèm theo nạp sẵn danh sách sản phẩm (Include OrderItems)
-    public async Task<Order?> GetByIdAsync(int orderId)
-    {
-        return await _context.Set<Order>()
-            .Include(o => o.OrderItems) // Include để khi hủy đơn lấy được danh sách sản phẩm hoàn kho
-                                        // .Include("OrderItems.ProductVariant") // Nếu có quan hệ để hoàn kho thì bỏ comment dòng này
-            .FirstOrDefaultAsync(o => o.OrderId == orderId);
-    }
 
-    // 🌟 2. Hiện thực hàm UpdateAsync để lưu trạng thái "Canceled" (Đã hủy)
     public async Task UpdateAsync(Order order)
     {
-        _context.Set<Order>().Update(order);
-        await Task.CompletedTask; // Hàm đồng bộ của EF Core, không cần gạch đỏ await
+        _ctx.Orders.Update(order);
+        await _ctx.SaveChangesAsync();
     }
 
-    // 🌟 3. Hiện thực hàm GetOrdersByUserIdAsync lấy lịch sử đơn hàng của khách
-    public async Task<List<Order>> GetOrdersByUserIdAsync(int userId)
+    // ── Status history & Shipment ────────────────────────────────────────────
+
+    public async Task AddStatusHistoryAsync(OrderStatusHistory history)
     {
-        return await _context.Set<Order>()
-            .Where(o => o.UserId == userId)
-            .OrderByDescending(o => o.CreatedAt) // Đơn hàng mới mua xếp lên hàng đầu
-            .ToListAsync();
+        await _ctx.OrderStatusHistories.AddAsync(history);
+        await _ctx.SaveChangesAsync();
     }
+
+    public async Task<Shipment?> GetShipmentByOrderIdAsync(int orderId)
+        => await _ctx.Shipments.FirstOrDefaultAsync(s => s.OrderId == orderId);
+
+    public async Task AddShipmentAsync(Shipment shipment)
+    {
+        await _ctx.Shipments.AddAsync(shipment);
+        await _ctx.SaveChangesAsync();
+    }
+
+    public async Task UpdateShipmentAsync(Shipment shipment)
+    {
+        _ctx.Shipments.Update(shipment);
+        await _ctx.SaveChangesAsync();
+    }
+
+    // ── Variant (dùng cho cancel rollback + create stock deduct) ────────────
+
+    public async Task<ProductVariant?> GetVariantByIdAsync(int variantId)
+        => await _ctx.ProductVariants.FindAsync(variantId);
+
+    public async Task UpdateVariantAsync(ProductVariant variant)
+    {
+        _ctx.ProductVariants.Update(variant);
+        await _ctx.SaveChangesAsync();
+    }
+
+    // ── UC-19: Lịch sử đơn hàng của Customer ────────────────────────────────
+
+    public async Task<(List<Order> Orders, int TotalCount)> GetByUserIdAsync(
+        int userId, string? status, int page, int pageSize)
+    {
+        var query = _ctx.Orders
+            .Include(o => o.OrderItems)
+            .Include(o => o.Shipment)
+            .Where(o => o.UserId == userId)
+            .AsQueryable();
+
+        if (!string.IsNullOrWhiteSpace(status))
+            query = query.Where(o => o.OrderStatus == status);
+
+        var total  = await query.CountAsync();
+        var orders = await query
+            .OrderByDescending(o => o.CreatedAt)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync();
+
+        return (orders, total);
+    }
+
+    // ── UC-20: Chi tiết đơn của Customer (ownership check) ──────────────────
+
+    public async Task<Order?> GetByIdAndUserIdAsync(int orderId, int userId)
+        => await _ctx.Orders
+            .Include(o => o.User)
+            .Include(o => o.OrderItems)
+                .ThenInclude(oi => oi.Variant)
+            .Include(o => o.Shipment)
+            .Include(o => o.OrderStatusHistories.OrderBy(h => h.ChangedAt))
+                .ThenInclude(h => h.ChangedByUser)
+            .FirstOrDefaultAsync(o => o.OrderId == orderId && o.UserId == userId);
 }

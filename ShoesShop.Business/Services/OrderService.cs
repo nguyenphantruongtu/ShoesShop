@@ -1,140 +1,408 @@
-﻿using ShoesShop.Business.Interfaces;
-using ShoesShop.Data.Interfaces;
+using ShoesShop.Business.Interfaces;
 using ShoesShop.Data.Entities;
+using ShoesShop.Data.Repositories.Interfaces;
 using ShoesShop.Shared.DTOs;
-using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
-using System.Linq;
+using ShoesShop.Shared.DTOs.Order;
 
 namespace ShoesShop.Business.Services;
 
 public class OrderService : IOrderService
 {
-    private readonly IOrderRepository _orderRepository;
+    private readonly IOrderRepository _repo;
 
-    public OrderService(IOrderRepository orderRepository)
+    public OrderService(IOrderRepository repo) => _repo = repo;
+
+    // ── UC-06: Tạo đơn hàng từ Cart ─────────────────────────────────────────
+    public async Task<int> CreateOrderAsync(CreateOrderRequest request, int userId)
     {
-        _orderRepository = orderRepository;
-    }
+        if (request.Items == null || request.Items.Count == 0)
+            throw new ArgumentException("Giỏ hàng trống.");
 
-    // UC-06: Tiếp nhận tạo đơn hàng từ AJAX Frontend
-    public async Task<int> CreateOrderAsync(OrderInputDto input)
-    {
-        if (input == null || input.OrderItems == null || input.OrderItems.Count == 0)
-        {
-            throw new ArgumentException("Danh sách sản phẩm trong giỏ hàng trống!");
-        }
-
-        await _orderRepository.BeginTransactionAsync();
+        await _repo.BeginTransactionAsync();
         try
         {
-            string uniqueOrderCode = "HD" + DateTime.Now.ToString("yyMMdd") + new Random().Next(100, 999);
+            var orderCode = "HD" + DateTime.UtcNow.ToString("yyMMdd") + Random.Shared.Next(100, 999);
 
             var order = new Order
             {
-                OrderCode = uniqueOrderCode,
-                UserId = 1, // Mặc định tài khoản "duy pham"
-                RecipientName = string.IsNullOrWhiteSpace(input.RecipientName) ? "Khách vãng lai" : input.RecipientName,
-                RecipientPhone = string.IsNullOrWhiteSpace(input.RecipientPhone) ? "0338025819" : input.RecipientPhone,
-                ShippingAddress = string.IsNullOrWhiteSpace(input.ShippingAddress) ? "Chưa cung cấp" : input.ShippingAddress,
-                Province = string.IsNullOrWhiteSpace(input.Province) ? "Chưa rõ" : input.Province,
-                District = string.IsNullOrWhiteSpace(input.District) ? "Chưa rõ" : input.District,
-                Ward = string.IsNullOrWhiteSpace(input.Ward) ? "Chưa rõ" : input.Ward,
-                SubTotal = input.SubTotal > 0 ? input.SubTotal : input.TotalAmount,
-                ShippingFee = 0,
-                DiscountAmount = 0,
-                TotalAmount = input.TotalAmount > 0 ? input.TotalAmount : 500000,
-                Note = input.Note,
-                OrderStatus = "Pending",
-                PaymentStatus = "Unpaid",
-                CreatedAt = DateTime.Now 
+                OrderCode       = orderCode,
+                UserId          = userId,
+                RecipientName   = request.RecipientName,
+                RecipientPhone  = request.RecipientPhone,
+                ShippingAddress = request.ShippingAddress,
+                Province        = request.Province,
+                District        = request.District,
+                Ward            = request.Ward,
+                SubTotal        = request.SubTotal,
+                ShippingFee     = request.ShippingFee,
+                DiscountAmount  = request.DiscountAmount,
+                TotalAmount     = request.TotalAmount,
+                Note            = request.Note,
+                OrderStatus     = OrderStatus.Pending,
+                PaymentStatus   = PaymentStatus.Unpaid,
+                CreatedAt       = DateTime.UtcNow
             };
 
-            await _orderRepository.AddAsync(order);
-            await _orderRepository.SaveChangesAsync();
+            await _repo.AddAsync(order);
+            await _repo.SaveChangesAsync();
 
-            foreach (var item in input.OrderItems)
+            foreach (var item in request.Items)
             {
-                int validVariantId = item.VariantId <= 0 ? 1 : item.VariantId;
+                var variant = await _repo.GetVariantByIdAsync(item.VariantId)
+                    ?? throw new KeyNotFoundException($"Không tìm thấy variant #{item.VariantId}.");
 
-                var orderItem = new OrderItem
+                if (variant.StockQuantity < item.Quantity)
+                    throw new InvalidOperationException(
+                        $"Variant #{item.VariantId} không đủ hàng (tồn: {variant.StockQuantity}, yêu cầu: {item.Quantity}).");
+
+                variant.StockQuantity -= item.Quantity;
+                await _repo.UpdateVariantAsync(variant);
+
+                await _repo.AddAsync(new OrderItem
                 {
-                    OrderId = order.OrderId,
-                    VariantId = validVariantId,
-                    ProductName = string.IsNullOrWhiteSpace(item.ProductName) ? "Sản phẩm giày" : item.ProductName,
-                    SizeValue = string.IsNullOrWhiteSpace(item.SizeValue) ? "Mặc định" : item.SizeValue,
-                    ColorName = string.IsNullOrWhiteSpace(item.ColorName) ? "Mặc định" : item.ColorName,
-                    UnitPrice = item.UnitPrice > 0 ? item.UnitPrice : 500000,
-                    Quantity = item.Quantity > 0 ? item.Quantity : 1,
-                    LineTotal = (item.UnitPrice > 0 ? item.UnitPrice : 500000) * (item.Quantity > 0 ? item.Quantity : 1)
-                };
-
-                await _orderRepository.AddAsync(orderItem);
+                    OrderId     = order.OrderId,
+                    VariantId   = item.VariantId,
+                    ProductName = item.ProductName,
+                    SizeValue   = item.SizeValue,
+                    ColorName   = item.ColorName,
+                    UnitPrice   = item.UnitPrice,
+                    Quantity    = item.Quantity,
+                    LineTotal   = item.UnitPrice * item.Quantity
+                });
             }
 
-            await _orderRepository.SaveChangesAsync();
-            await _orderRepository.CommitTransactionAsync();
+            await _repo.SaveChangesAsync();
+            await _repo.CommitTransactionAsync();
 
             return order.OrderId;
         }
-        catch (Exception ex)
+        catch
         {
-            await _orderRepository.RollbackTransactionAsync();
-            string internalErrorMessage = ex.InnerException != null ? ex.InnerException.Message : ex.Message;
-            throw new Exception("Lỗi hệ thống từ SQL Server: " + internalErrorMessage);
+            await _repo.RollbackTransactionAsync();
+            throw;
         }
     }
 
-    // UC-21: Xử lý hủy đơn hàng phía Backend API
-    public async Task<bool> CancelOrderAsync(int orderId, int userId)
+    // ── UC-31: List đơn hàng cho Staff ──────────────────────────────────────
+    public async Task<OrderListResponse> GetOrdersAsync(
+        string? search, string? status, int page, int pageSize)
     {
-        await _orderRepository.BeginTransactionAsync();
-        try
+        var (orders, total) = await _repo.GetPaginatedAsync(search, status, page, pageSize);
+
+        return new OrderListResponse
         {
-            var order = await _orderRepository.GetByIdAsync(orderId);
-
-            if (order == null)
+            Orders = orders.Select(o => new OrderListItem
             {
-                throw new Exception("Đơn hàng không tồn tại!");
-            }
-
-            // Chỉ cho phép hủy khi trạng thái là Chờ xử lý hoặc Đã xác nhận
-            if (order.OrderStatus != "Pending" && order.OrderStatus != "Confirmed")
-            {
-                throw new Exception($"Không thể hủy đơn hàng do đơn đang ở trạng thái: {order.OrderStatus}");
-            }
-
-            // Đã sửa cú pháp chuỗi ghi chú
-            string timeString = DateTime.Now.ToString("dd/MM/yyyy HH:mm");
-            order.OrderStatus = "Canceled";
-            order.Note = (string.IsNullOrWhiteSpace(order.Note) ? "" : order.Note + " | ") + $"Khách hủy đơn vào ngày: {timeString}";
-
-            await _orderRepository.UpdateAsync(order);
-            await _orderRepository.SaveChangesAsync();
-            await _orderRepository.CommitTransactionAsync();
-            return true;
-        }
-        catch (Exception ex)
-        {
-            await _orderRepository.RollbackTransactionAsync();
-            throw new Exception("Lỗi xử lý hủy đơn: " + ex.Message);
-        }
+                OrderId        = o.OrderId,
+                OrderCode      = o.OrderCode,
+                CustomerName   = o.RecipientName,
+                CustomerPhone  = o.RecipientPhone,
+                TotalAmount    = o.TotalAmount,
+                OrderStatus    = o.OrderStatus,
+                PaymentStatus  = o.PaymentStatus,
+                ItemCount      = o.OrderItems.Count,
+                CreatedAt      = o.CreatedAt,
+                HandledByStaff = o.HandledByStaff?.FullName
+            }).ToList(),
+            TotalCount = total,
+            Page       = page,
+            PageSize   = pageSize
+        };
     }
 
-    // Tải dữ liệu lịch sử đơn hàng của User ra trang giao diện
-    public async Task<List<OrderDto>> GetOrderHistoryByUserIdAsync(int userId)
+    // ── UC-32: Chi tiết đơn hàng ────────────────────────────────────────────
+    public async Task<OrderDetailResponse> GetOrderDetailAsync(int orderId)
     {
-        var orders = await _orderRepository.GetOrdersByUserIdAsync(userId);
-
-        if (orders == null) return new List<OrderDto>();
-
-        return orders.Select(o => new OrderDto
-        {
-            OrderId = o.OrderId,
-            OrderDate = o.CreatedAt,
-            TotalAmount = o.TotalAmount,
-            OrderStatus = o.OrderStatus ?? "Pending"
-        }).ToList();
+        var order = await _repo.GetByIdWithDetailsAsync(orderId)
+            ?? throw new KeyNotFoundException($"Không tìm thấy đơn hàng #{orderId}.");
+        return MapToDetail(order);
     }
+
+    // ── UC-32: Xác nhận đơn (Pending → Confirmed) ───────────────────────────
+    public async Task<OrderDetailResponse> ConfirmOrderAsync(int orderId, int staffId)
+    {
+        var order = await _repo.GetByIdWithDetailsAsync(orderId)
+            ?? throw new KeyNotFoundException($"Không tìm thấy đơn hàng #{orderId}.");
+
+        if (order.OrderStatus != OrderStatus.Pending)
+            throw new InvalidOperationException(
+                $"Chỉ có thể xác nhận đơn ở trạng thái Pending. Hiện tại: {order.OrderStatus}.");
+
+        order.OrderStatus      = OrderStatus.Confirmed;
+        order.HandledByStaffId = staffId;
+        order.UpdatedAt        = DateTime.UtcNow;
+
+        await _repo.UpdateAsync(order);
+        await _repo.AddStatusHistoryAsync(new OrderStatusHistory
+        {
+            OrderId         = orderId,
+            Status          = OrderStatus.Confirmed,
+            Note            = "Staff xác nhận đơn hàng.",
+            ChangedByUserId = staffId,
+            ChangedAt       = DateTime.UtcNow
+        });
+
+        return MapToDetail(order);
+    }
+
+    // ── UC-33 + UC-34: Cập nhật trạng thái ─────────────────────────────────
+    public async Task<OrderDetailResponse> UpdateStatusAsync(
+        int orderId, UpdateOrderStatusRequest request, int staffId)
+    {
+        var order = await _repo.GetByIdWithDetailsAsync(orderId)
+            ?? throw new KeyNotFoundException($"Không tìm thấy đơn hàng #{orderId}.");
+
+        var newStatus = request.NewStatus;
+
+        if (!OrderStatus.IsValidTransition(order.OrderStatus, newStatus))
+            throw new InvalidOperationException(
+                $"Không thể chuyển từ '{order.OrderStatus}' sang '{newStatus}'.");
+
+        if (newStatus == OrderStatus.Shipping)
+        {
+            if (string.IsNullOrWhiteSpace(request.CarrierName))
+                throw new ArgumentException("CarrierName là bắt buộc khi chuyển sang Shipping.");
+            if (string.IsNullOrWhiteSpace(request.TrackingNumber))
+                throw new ArgumentException("TrackingNumber là bắt buộc khi chuyển sang Shipping.");
+
+            await HandleShipmentAsync(order, request);
+        }
+
+        if (newStatus == OrderStatus.Delivered)
+            await MarkShipmentDeliveredAsync(orderId);
+
+        order.OrderStatus      = newStatus;
+        order.HandledByStaffId = staffId;
+        order.UpdatedAt        = DateTime.UtcNow;
+
+        await _repo.UpdateAsync(order);
+        await _repo.AddStatusHistoryAsync(new OrderStatusHistory
+        {
+            OrderId         = orderId,
+            Status          = newStatus,
+            Note            = request.Note ?? $"Chuyển trạng thái sang {newStatus}.",
+            ChangedByUserId = staffId,
+            ChangedAt       = DateTime.UtcNow
+        });
+
+        var updated = await _repo.GetByIdWithDetailsAsync(orderId);
+        return MapToDetail(updated!);
+    }
+
+    // ── UC-35: Hủy đơn + rollback stock ────────────────────────────────────
+    public async Task<OrderDetailResponse> CancelOrderAsync(
+        int orderId, CancelOrderRequest request, int staffId)
+    {
+        var order = await _repo.GetByIdWithDetailsAsync(orderId)
+            ?? throw new KeyNotFoundException($"Không tìm thấy đơn hàng #{orderId}.");
+
+        if (!OrderStatus.IsCancellable(order.OrderStatus))
+            throw new InvalidOperationException(
+                $"Không thể hủy đơn ở trạng thái '{order.OrderStatus}'.");
+
+        foreach (var item in order.OrderItems)
+        {
+            var variant = await _repo.GetVariantByIdAsync(item.VariantId);
+            if (variant != null)
+            {
+                variant.StockQuantity += item.Quantity;
+                await _repo.UpdateVariantAsync(variant);
+            }
+        }
+
+        order.OrderStatus      = OrderStatus.Cancelled;
+        order.CancelReason     = request.CancelReason;
+        order.CancelledAt      = DateTime.UtcNow;
+        order.HandledByStaffId = staffId;
+        order.UpdatedAt        = DateTime.UtcNow;
+
+        await _repo.UpdateAsync(order);
+        await _repo.AddStatusHistoryAsync(new OrderStatusHistory
+        {
+            OrderId         = orderId,
+            Status          = OrderStatus.Cancelled,
+            Note            = $"Hủy bởi Staff. Lý do: {request.CancelReason}",
+            ChangedByUserId = staffId,
+            ChangedAt       = DateTime.UtcNow
+        });
+
+        var updated = await _repo.GetByIdWithDetailsAsync(orderId);
+        return MapToDetail(updated!);
+    }
+
+    // ── UC-19: Lịch sử đơn hàng của Customer ───────────────────────────────
+    public async Task<OrderListResponse> GetMyOrdersAsync(
+        int userId, string? status, int page, int pageSize)
+    {
+        var (orders, total) = await _repo.GetByUserIdAsync(userId, status, page, pageSize);
+
+        return new OrderListResponse
+        {
+            Orders = orders.Select(o => new OrderListItem
+            {
+                OrderId       = o.OrderId,
+                OrderCode     = o.OrderCode,
+                CustomerName  = o.RecipientName,
+                CustomerPhone = o.RecipientPhone,
+                TotalAmount   = o.TotalAmount,
+                OrderStatus   = o.OrderStatus,
+                PaymentStatus = o.PaymentStatus,
+                ItemCount     = o.OrderItems.Count,
+                CreatedAt     = o.CreatedAt
+            }).ToList(),
+            TotalCount = total,
+            Page       = page,
+            PageSize   = pageSize
+        };
+    }
+
+    // ── UC-20 + UC-22: Chi tiết đơn hàng của Customer ──────────────────────
+    public async Task<OrderDetailResponse> GetMyOrderDetailAsync(int orderId, int userId)
+    {
+        var order = await _repo.GetByIdAndUserIdAsync(orderId, userId)
+            ?? throw new KeyNotFoundException($"Không tìm thấy đơn hàng #{orderId}.");
+        return MapToDetail(order);
+    }
+
+    // ── UC-21: Customer tự hủy đơn ─────────────────────────────────────────
+    public async Task<OrderDetailResponse> CancelByCustomerAsync(int orderId, int userId, string cancelReason)
+    {
+        var order = await _repo.GetByIdAndUserIdAsync(orderId, userId)
+            ?? throw new KeyNotFoundException($"Không tìm thấy đơn hàng #{orderId}.");
+
+        if (!OrderStatus.IsCancellable(order.OrderStatus))
+            throw new InvalidOperationException(
+                $"Không thể hủy đơn ở trạng thái '{order.OrderStatus}'.");
+
+        foreach (var item in order.OrderItems)
+        {
+            var variant = await _repo.GetVariantByIdAsync(item.VariantId);
+            if (variant != null)
+            {
+                variant.StockQuantity += item.Quantity;
+                await _repo.UpdateVariantAsync(variant);
+            }
+        }
+
+        order.OrderStatus  = OrderStatus.Cancelled;
+        order.CancelReason = cancelReason;
+        order.CancelledAt  = DateTime.UtcNow;
+        order.UpdatedAt    = DateTime.UtcNow;
+
+        await _repo.UpdateAsync(order);
+        await _repo.AddStatusHistoryAsync(new OrderStatusHistory
+        {
+            OrderId         = orderId,
+            Status          = OrderStatus.Cancelled,
+            Note            = $"Khách hàng hủy đơn. Lý do: {cancelReason}",
+            ChangedByUserId = userId,
+            ChangedAt       = DateTime.UtcNow
+        });
+
+        var updated = await _repo.GetByIdAndUserIdAsync(orderId, userId);
+        return MapToDetail(updated!);
+    }
+
+    // ── Helpers ──────────────────────────────────────────────────────────────
+
+    private async Task HandleShipmentAsync(Order order, UpdateOrderStatusRequest req)
+    {
+        var shipment = await _repo.GetShipmentByOrderIdAsync(order.OrderId);
+
+        if (shipment == null)
+        {
+            await _repo.AddShipmentAsync(new Shipment
+            {
+                OrderId               = order.OrderId,
+                CarrierName           = req.CarrierName!,
+                TrackingNumber        = req.TrackingNumber,
+                ShippingStatus        = "Shipping",
+                ShippedAt             = DateTime.UtcNow,
+                EstimatedDeliveryDate = req.EstimatedDeliveryDate,
+                Note                  = req.Note
+            });
+        }
+        else
+        {
+            shipment.CarrierName           = req.CarrierName!;
+            shipment.TrackingNumber        = req.TrackingNumber;
+            shipment.ShippingStatus        = "Shipping";
+            shipment.ShippedAt             = DateTime.UtcNow;
+            shipment.EstimatedDeliveryDate = req.EstimatedDeliveryDate;
+            shipment.Note                  = req.Note;
+            await _repo.UpdateShipmentAsync(shipment);
+        }
+    }
+
+    private async Task MarkShipmentDeliveredAsync(int orderId)
+    {
+        var shipment = await _repo.GetShipmentByOrderIdAsync(orderId);
+        if (shipment != null)
+        {
+            shipment.ShippingStatus = "Delivered";
+            shipment.DeliveredAt    = DateTime.UtcNow;
+            await _repo.UpdateShipmentAsync(shipment);
+        }
+    }
+
+    private static OrderDetailResponse MapToDetail(Order o) => new()
+    {
+        OrderId         = o.OrderId,
+        OrderCode       = o.OrderCode,
+        CustomerId      = o.UserId,
+        CustomerName    = o.User.FullName,
+        CustomerEmail   = o.User.Email,
+        RecipientName   = o.RecipientName,
+        RecipientPhone  = o.RecipientPhone,
+        ShippingAddress = o.ShippingAddress,
+        Province        = o.Province,
+        District        = o.District,
+        Ward            = o.Ward,
+        SubTotal        = o.SubTotal,
+        ShippingFee     = o.ShippingFee,
+        DiscountAmount  = o.DiscountAmount,
+        TotalAmount     = o.TotalAmount,
+        OrderStatus     = o.OrderStatus,
+        PaymentStatus   = o.PaymentStatus,
+        Note            = o.Note,
+        CancelReason    = o.CancelReason,
+        CancelledAt     = o.CancelledAt,
+        HandledByStaff  = o.HandledByStaff?.FullName,
+        CreatedAt       = o.CreatedAt,
+        UpdatedAt       = o.UpdatedAt,
+
+        Items = o.OrderItems.Select(i => new OrderItemResponse
+        {
+            OrderItemId = i.OrderItemId,
+            VariantId   = i.VariantId,
+            ProductName = i.ProductName,
+            SizeValue   = i.SizeValue,
+            ColorName   = i.ColorName,
+            Sku         = i.Variant?.Sku,
+            UnitPrice   = i.UnitPrice,
+            Quantity    = i.Quantity,
+            LineTotal   = i.LineTotal
+        }).ToList(),
+
+        Shipment = o.Shipment == null ? null : new ShipmentResponse
+        {
+            ShipmentId            = o.Shipment.ShipmentId,
+            CarrierName           = o.Shipment.CarrierName,
+            TrackingNumber        = o.Shipment.TrackingNumber,
+            ShippingStatus        = o.Shipment.ShippingStatus,
+            ShippedAt             = o.Shipment.ShippedAt,
+            EstimatedDeliveryDate = o.Shipment.EstimatedDeliveryDate,
+            DeliveredAt           = o.Shipment.DeliveredAt,
+            Note                  = o.Shipment.Note
+        },
+
+        StatusHistory = o.OrderStatusHistories.Select(h => new OrderStatusHistoryResponse
+        {
+            HistoryId = h.HistoryId,
+            Status    = h.Status,
+            Note      = h.Note,
+            ChangedBy = h.ChangedByUser?.FullName,
+            ChangedAt = h.ChangedAt
+        }).ToList()
+    };
 }

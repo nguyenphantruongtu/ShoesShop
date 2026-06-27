@@ -1,0 +1,105 @@
+@using System.Text.Json
+@model JsonElement?
+@{ ViewData["Title"] = "Đơn hàng"; }
+
+@{
+    var statuses = new[] { "Pending","Confirmed","Preparing","Shipping","Delivered","Cancelled" };
+    var statusVi = new Dictionary<string,string> { ["Pending"]="Chờ xác nhận",["Confirmed"]="Đã xác nhận",["Preparing"]="Đang chuẩn bị",["Shipping"]="Đang giao",["Delivered"]="Đã giao",["Cancelled"]="Đã hủy" };
+    string curStatus = ViewBag.Status ?? "";
+    int page = ViewBag.Page ?? 1;
+}
+
+<div class="page-header"><h3><i class="bi bi-receipt me-2 text-primary"></i>Quản lý đơn hàng</h3><p>Theo dõi và xử lý đơn hàng</p></div>
+
+@* Filter bar *@
+<form method="get" class="card border-0 shadow-sm rounded-4 p-3 mb-4">
+    <div class="row g-2 align-items-end">
+        <div class="col-md-5"><input type="text" name="search" class="form-control rounded-3" placeholder="Tìm mã đơn / tên KH..." value="@ViewBag.Search"></div>
+        <div class="col-md-3">
+            <select name="status" class="form-select rounded-3">
+                <option value="">Tất cả trạng thái</option>
+                @foreach (var s in statuses)
+                { <option value="@s" selected="@(curStatus==s)">@statusVi[s]</option> }
+            </select>
+        </div>
+        <div class="col-md-2 d-flex gap-2">
+            <button type="submit" class="btn btn-primary rounded-3 flex-grow-1"><i class="bi bi-search me-1"></i>Lọc</button>
+            <a href="/Admin/Orders" class="btn btn-outline-secondary rounded-3"><i class="bi bi-x-lg"></i></a>
+        </div>
+    </div>
+</form>
+
+@* Status pills *@
+<div class="d-flex gap-2 flex-wrap mb-3">
+    <a asp-action="Index" class="btn btn-sm rounded-pill @(string.IsNullOrEmpty(curStatus) ? "btn-primary" : "btn-outline-secondary")">Tất cả</a>
+    @foreach (var s in statuses)
+    {
+        <a asp-action="Index" asp-route-status="@s" asp-route-search="@ViewBag.Search"
+           class="btn btn-sm rounded-pill @(curStatus==s ? "btn-primary" : "btn-outline-secondary")">@statusVi[s]</a>
+    }
+</div>
+
+@if (Model is JsonElement data && data.ValueKind != JsonValueKind.Undefined)
+{
+    var orders     = data.GetProperty("orders");
+    var total      = data.GetProperty("totalCount").GetInt32();
+    var totalPages = data.GetProperty("totalPages").GetInt32();
+
+    <div class="card border-0 shadow-sm rounded-4">
+      <div class="card-body p-0">
+        <div class="px-4 py-3 border-bottom"><span class="text-muted small">Tổng <strong>@total</strong> đơn hàng</span></div>
+        <table class="table admin-table mb-0">
+          <thead><tr>
+            <th class="ps-4">Mã đơn</th><th>Khách hàng</th><th>Sản phẩm</th><th>Tổng tiền</th><th>TT thanh toán</th><th>TT đơn</th><th>Ngày tạo</th><th class="text-end pe-4">Chi tiết</th>
+          </tr></thead>
+          <tbody>
+          @if (orders.ValueKind == JsonValueKind.Array)
+              foreach (var o in orders.EnumerateArray())
+              {
+                  var oid    = o.GetProperty("orderId").GetInt32();
+                  var code   = o.GetProperty("orderCode").GetString();
+                  var cname  = o.GetProperty("customerName").GetString();
+                  var items  = o.GetProperty("itemCount").GetInt32();
+                  var total2 = o.GetProperty("totalAmount").GetDecimal();
+                  var ostats = o.GetProperty("orderStatus").GetString() ?? "";
+                  var pstats = o.GetProperty("paymentStatus").GetString() ?? "";
+                  var date   = o.GetProperty("createdAt").GetDateTime();
+                  var badgeCls = ostats switch {
+                      "Delivered"  => "badge-status-delivered",
+                      "Shipping"   => "badge-status-shipping",
+                      "Preparing"  => "badge-status-preparing",
+                      "Confirmed"  => "badge-status-confirmed",
+                      "Cancelled"  => "badge-status-cancelled",
+                      _            => "badge-status-pending"
+                  };
+                  <tr>
+                    <td class="ps-4"><a asp-action="Detail" asp-route-id="@oid" class="fw-bold text-decoration-none">@code</a></td>
+                    <td class="small">@cname</td>
+                    <td class="text-muted small">@items SP</td>
+                    <td class="fw-bold small">@total2.ToString("N0")₫</td>
+                    <td><span class="badge @(pstats=="Paid"?"bg-success":"bg-warning text-dark") rounded-pill px-3 small">@pstats</span></td>
+                    <td><span class="badge @badgeCls rounded-pill px-3 small">@(statusVi.GetValueOrDefault(ostats, ostats))</span></td>
+                    <td class="text-muted small">@date.ToString("dd/MM/yy HH:mm")</td>
+                    <td class="text-end pe-4"><a asp-action="Detail" asp-route-id="@oid" class="btn btn-sm btn-outline-primary rounded-3"><i class="bi bi-eye"></i></a></td>
+                  </tr>
+              }
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    @if (totalPages > 1)
+    {
+        <nav class="mt-4 d-flex justify-content-center">
+          <ul class="pagination">
+            @for (int i = 1; i <= totalPages; i++)
+            {
+                <li class="page-item @(i==page?"active":"")">
+                    <a class="page-link rounded-3 mx-1" asp-action="Index"
+                       asp-route-search="@ViewBag.Search" asp-route-status="@ViewBag.Status" asp-route-page="@i">@i</a>
+                </li>
+            }
+          </ul>
+        </nav>
+    }
+}

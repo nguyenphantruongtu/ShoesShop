@@ -1,0 +1,211 @@
+@using System.Text.Json
+@model JsonElement
+@{
+    ViewData["Title"] = "Chi tiết đơn hàng";
+    var orderId  = Model.GetProperty("orderId").GetInt32();
+    var code     = Model.GetProperty("orderCode").GetString();
+    var status   = Model.GetProperty("orderStatus").GetString() ?? "";
+    var pStatus  = Model.GetProperty("paymentStatus").GetString() ?? "";
+    var items    = Model.GetProperty("items");
+    var history  = Model.TryGetProperty("statusHistory", out var h) ? h : default;
+    var shipment = Model.TryGetProperty("shipment", out var sh) && sh.ValueKind != JsonValueKind.Null ? sh : (JsonElement?)null;
+    var statusVi = new Dictionary<string,string> { ["Pending"]="Chờ xác nhận",["Confirmed"]="Đã xác nhận",["Preparing"]="Đang chuẩn bị",["Shipping"]="Đang giao",["Delivered"]="Đã giao",["Cancelled"]="Đã hủy" };
+}
+
+<div class="page-header d-flex justify-content-between align-items-center">
+    <div><h3><i class="bi bi-receipt me-2 text-primary"></i>Đơn hàng @code</h3></div>
+    <a asp-action="Index" class="btn btn-outline-secondary rounded-3"><i class="bi bi-arrow-left me-1"></i>Quay lại</a>
+</div>
+
+<div class="row g-4">
+  <div class="col-lg-8">
+    @* Items *@
+    <div class="card border-0 shadow-sm rounded-4 mb-4">
+      <div class="card-body p-4">
+        <h5 class="fw-bold mb-3"><i class="bi bi-bag me-2 text-primary"></i>Sản phẩm đặt mua</h5>
+        <table class="table align-middle mb-0">
+          <thead class="table-light small text-uppercase"><tr><th>Sản phẩm</th><th>Size/Màu</th><th>ĐVG</th><th>SL</th><th class="text-end">Thành tiền</th></tr></thead>
+          <tbody>
+          @if (items.ValueKind == JsonValueKind.Array)
+              foreach (var it in items.EnumerateArray())
+              {
+                  <tr>
+                    <td class="fw-medium">@it.GetProperty("productName").GetString()</td>
+                    <td class="text-muted small">@it.GetProperty("sizeValue").GetString() / @it.GetProperty("colorName").GetString()</td>
+                    <td class="small">@it.GetProperty("unitPrice").GetDecimal().ToString("N0")₫</td>
+                    <td class="small">x@it.GetProperty("quantity").GetInt32()</td>
+                    <td class="text-end fw-bold small">@it.GetProperty("lineTotal").GetDecimal().ToString("N0")₫</td>
+                  </tr>
+              }
+          </tbody>
+        </table>
+        <hr class="my-3">
+        <div class="d-flex flex-column gap-1 text-end">
+          <div class="text-muted small">Tạm tính: <span class="fw-medium">@Model.GetProperty("subTotal").GetDecimal().ToString("N0")₫</span></div>
+          <div class="text-muted small">Phí giao: <span class="fw-medium">@Model.GetProperty("shippingFee").GetDecimal().ToString("N0")₫</span></div>
+          @if (Model.GetProperty("discountAmount").GetDecimal() > 0)
+          {
+              <div class="text-success small">Giảm giá: <span class="fw-medium">-@Model.GetProperty("discountAmount").GetDecimal().ToString("N0")₫</span></div>
+          }
+          <div class="fw-bold">Tổng cộng: <span class="text-primary fs-5">@Model.GetProperty("totalAmount").GetDecimal().ToString("N0")₫</span></div>
+        </div>
+      </div>
+    </div>
+
+    @* Status history *@
+    <div class="card border-0 shadow-sm rounded-4">
+      <div class="card-body p-4">
+        <h5 class="fw-bold mb-3"><i class="bi bi-clock-history me-2 text-primary"></i>Lịch sử trạng thái</h5>
+        @if (history.ValueKind == JsonValueKind.Array)
+        {
+            <div class="d-flex flex-column gap-3">
+            @foreach (var hh in history.EnumerateArray())
+            {
+                var hStatus = hh.GetProperty("status").GetString() ?? "";
+                var hNote   = hh.TryGetProperty("note", out var hn) && hn.ValueKind != JsonValueKind.Null ? hn.GetString() : null;
+                var hBy     = hh.TryGetProperty("changedBy", out var hb) && hb.ValueKind != JsonValueKind.Null ? hb.GetString() : "System";
+                var hAt     = hh.GetProperty("changedAt").GetDateTime();
+                <div class="d-flex gap-3 align-items-start">
+                    <div class="rounded-circle bg-primary d-flex align-items-center justify-content-center flex-shrink-0" style="width:32px;height:32px;margin-top:2px">
+                        <i class="bi bi-check text-white small"></i>
+                    </div>
+                    <div>
+                        <div class="fw-medium">@(statusVi.GetValueOrDefault(hStatus, hStatus))</div>
+                        @if (!string.IsNullOrEmpty(hNote)){<div class="text-muted small">@hNote</div>}
+                        <div class="text-muted small">@hAt.ToString("HH:mm dd/MM/yyyy") — @hBy</div>
+                    </div>
+                </div>
+            }
+            </div>
+        }
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-4">
+    @* Customer info *@
+    <div class="card border-0 shadow-sm rounded-4 mb-4">
+      <div class="card-body p-4">
+        <h5 class="fw-bold mb-3"><i class="bi bi-person me-2 text-primary"></i>Thông tin giao hàng</h5>
+        <div class="small d-flex flex-column gap-2">
+          <div><span class="text-muted">Người nhận: </span><strong>@Model.GetProperty("recipientName").GetString()</strong></div>
+          <div><span class="text-muted">Điện thoại: </span>@Model.GetProperty("recipientPhone").GetString()</div>
+          <div><span class="text-muted">Địa chỉ: </span>@Model.GetProperty("shippingAddress").GetString(), @Model.GetProperty("ward").GetString(), @Model.GetProperty("district").GetString(), @Model.GetProperty("province").GetString()</div>
+        </div>
+      </div>
+    </div>
+
+    @* Status panel *@
+    <div class="card border-0 shadow-sm rounded-4 mb-4">
+      <div class="card-body p-4">
+        <h5 class="fw-bold mb-3"><i class="bi bi-activity me-2 text-primary"></i>Trạng thái</h5>
+        <div class="mb-3">
+            <span class="badge rounded-pill px-3 @(status switch { "Delivered"=>"badge-status-delivered","Shipping"=>"badge-status-shipping","Preparing"=>"badge-status-preparing","Confirmed"=>"badge-status-confirmed","Cancelled"=>"badge-status-cancelled",_=>"badge-status-pending" }) fs-6">@(statusVi.GetValueOrDefault(status, status))</span>
+        </div>
+        @if (status == "Pending")
+        {
+            <form asp-action="Confirm" asp-route-id="@orderId" method="post" class="mb-2">
+                @Html.AntiForgeryToken()
+                <button type="submit" class="btn btn-success w-100 rounded-3"><i class="bi bi-check-circle me-2"></i>Xác nhận đơn hàng</button>
+            </form>
+        }
+        @if (status is "Pending" or "Confirmed" or "Preparing")
+        {
+            <button class="btn btn-outline-danger w-100 rounded-3" data-bs-toggle="modal" data-bs-target="#cancelModal">
+                <i class="bi bi-x-circle me-2"></i>Hủy đơn hàng
+            </button>
+        }
+        @if (status is "Confirmed" or "Preparing" or "Shipping")
+        {
+            <hr>
+            <button class="btn btn-primary w-100 rounded-3" data-bs-toggle="modal" data-bs-target="#statusModal">
+                <i class="bi bi-arrow-right-circle me-2"></i>Chuyển trạng thái
+            </button>
+        }
+      </div>
+    </div>
+
+    @* Shipment *@
+    @if (shipment.HasValue)
+    {
+        <div class="card border-0 shadow-sm rounded-4">
+          <div class="card-body p-4">
+            <h5 class="fw-bold mb-3"><i class="bi bi-truck me-2 text-primary"></i>Vận chuyển</h5>
+            <div class="small d-flex flex-column gap-2">
+              <div><span class="text-muted">Đơn vị: </span><strong>@shipment.Value.GetProperty("carrierName").GetString()</strong></div>
+              @{var tn = shipment.Value.TryGetProperty("trackingNumber", out var tnn) && tnn.ValueKind != JsonValueKind.Null ? tnn.GetString() : null;}
+              @if (!string.IsNullOrEmpty(tn)){<div><span class="text-muted">Mã vận đơn: </span><code>@tn</code></div>}
+              @{var eta = shipment.Value.TryGetProperty("estimatedDeliveryDate", out var etad) && etad.ValueKind != JsonValueKind.Null ? (DateTime?)etad.GetDateTime() : null;}
+              @if (eta.HasValue){<div><span class="text-muted">Dự kiến giao: </span>@eta.Value.ToString("dd/MM/yyyy")</div>}
+            </div>
+          </div>
+        </div>
+    }
+  </div>
+</div>
+
+@* Cancel Modal *@
+<div class="modal fade" id="cancelModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-sm">
+    <div class="modal-content border-0 shadow-lg rounded-4">
+      <div class="modal-header border-0"><h5 class="modal-title fw-bold text-danger"><i class="bi bi-x-circle me-2"></i>Hủy đơn hàng</h5><button class="btn-close" data-bs-dismiss="modal"></button></div>
+      <form asp-action="Cancel" asp-route-id="@orderId" method="post">@Html.AntiForgeryToken()
+        <div class="modal-body p-4">
+          <label class="form-label fw-semibold">Lý do hủy <span class="text-danger">*</span></label>
+          <textarea name="cancelReason" class="form-control rounded-3" rows="3" required maxlength="500" placeholder="Nhập lý do hủy đơn..."></textarea>
+        </div>
+        <div class="modal-footer border-0 justify-content-center gap-2">
+          <button type="button" class="btn btn-light rounded-3 px-4" data-bs-dismiss="modal">Đóng</button>
+          <button type="submit" class="btn btn-danger rounded-3 px-4">Xác nhận hủy</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+@* Update Status Modal *@
+<div class="modal fade" id="statusModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow-lg rounded-4">
+      <div class="modal-header border-0"><h5 class="modal-title fw-bold"><i class="bi bi-arrow-right-circle me-2 text-primary"></i>Cập nhật trạng thái</h5><button class="btn-close" data-bs-dismiss="modal"></button></div>
+      <form asp-action="UpdateStatus" asp-route-id="@orderId" method="post">@Html.AntiForgeryToken()
+        <div class="modal-body p-4">
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Trạng thái mới <span class="text-danger">*</span></label>
+            <select name="newStatus" id="newStatusSel" class="form-select rounded-3" required onchange="toggleShipping(this.value)">
+              @if(status=="Confirmed"){<option value="Preparing">Đang chuẩn bị</option>}
+              @if(status is "Confirmed" or "Preparing"){<option value="Shipping">Đang giao hàng</option>}
+              @if(status=="Shipping"){<option value="Delivered">Đã giao hàng</option>}
+            </select>
+          </div>
+          <div class="mb-3"><label class="form-label fw-semibold">Ghi chú</label>
+            <input type="text" name="note" class="form-control rounded-3" maxlength="500"></div>
+          <div id="shippingFields" style="display:none">
+            <div class="mb-3"><label class="form-label fw-semibold">Đơn vị vận chuyển <span class="text-danger">*</span></label>
+              <input type="text" name="carrierName" id="fCarrier" class="form-control rounded-3" maxlength="100"></div>
+            <div class="mb-3"><label class="form-label fw-semibold">Mã vận đơn <span class="text-danger">*</span></label>
+              <input type="text" name="trackingNumber" id="fTracking" class="form-control rounded-3" maxlength="100"></div>
+            <div><label class="form-label fw-semibold">Ngày giao dự kiến</label>
+              <input type="date" name="estimatedDeliveryDate" class="form-control rounded-3"></div>
+          </div>
+        </div>
+        <div class="modal-footer border-0 justify-content-center gap-2">
+          <button type="button" class="btn btn-light rounded-3 px-4" data-bs-dismiss="modal">Hủy</button>
+          <button type="submit" class="btn btn-primary rounded-3 px-4">Cập nhật</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+@section Scripts {
+<script>
+function toggleShipping(val) {
+    const f = document.getElementById('shippingFields');
+    const c = document.getElementById('fCarrier');
+    const t = document.getElementById('fTracking');
+    if (val === 'Shipping') { f.style.display=''; c.required=true; t.required=true; }
+    else { f.style.display='none'; c.required=false; t.required=false; }
+}
+</script>
+}

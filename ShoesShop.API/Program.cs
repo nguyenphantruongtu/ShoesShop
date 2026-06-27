@@ -1,69 +1,183 @@
-﻿using System.Reflection.Emit;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.OData;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 using Microsoft.OData.ModelBuilder;
+using Microsoft.OpenApi.Models;
 using ShoesShop.Business.Interfaces;
 using ShoesShop.Business.Services;
 using ShoesShop.Data.Context;
 using ShoesShop.Data.Entities;
-using ShoesShop.Data.Interfaces;
 using ShoesShop.Data.Repositories;
+using ShoesShop.Data.Repositories.Interfaces;
+using ShoesShop.Data.SeedData;
+using System.Text;
 
-var builder = WebApplication.CreateBuilder(args);
+namespace ShoesShop.API;
 
-// 1. Cấu hình Controllers và tích hợp OData
-var modelBuilder = new ODataConventionModelBuilder();
-modelBuilder.EntitySet<Product>("Products");
-builder.Services.AddControllers()
-    .AddOData(options => options
-        .Select()
-        .Filter()
-        .OrderBy()
-        .Count()
-        .Expand()
-        .SetMaxTop(100)
-        //.AddRouteComponents("", modelBuilder.GetEdmModel())
-    );
-// 2. Cấu hình Swagger/OpenAPI
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
-
-// 3. Kết nối Cơ sở dữ liệu SQL Server (Lấy chuỗi kết nối từ appsettings.json)
-builder.Services.AddDbContext<ShoeStoreDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
-
-// 4. Đăng ký Dependency Injection (DI) cho các lớp Tầng Data & Business
-builder.Services.AddScoped<IProductRepository, ProductRepository>();
-builder.Services.AddScoped<IProductService, ProductService>();
-builder.Services.AddScoped<IOrderRepository, OrderRepository>();
-builder.Services.AddScoped<IOrderService, OrderService>();
-// 5. Đăng ký AutoMapper bằng biểu thức Lambda (Sửa lỗi gạch đỏ)
-builder.Services.AddAutoMapper(cfg =>
+public class Program
 {
-    cfg.AddProfile<ShoesShop.Business.MappingProfile>();
-});
-builder.Services.AddCors(options =>
-{
-    options.AddPolicy("AllowAll", policy =>
+    public static async Task Main(string[] args)
     {
-        policy.AllowAnyOrigin()
-              .AllowAnyMethod()
-              .AllowAnyHeader();
-    });
-});
-var app = builder.Build();
+        var builder = WebApplication.CreateBuilder(args);
 
-// 6. Cấu hình HTTP request pipeline (Middleware)
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
+        // ── DbContext ────────────────────────────────────────────────────
+        builder.Services.AddDbContext<ShoeStoreDbContext>(options =>
+            options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+
+        // ── Repositories ─────────────────────────────────────────────────
+        builder.Services.AddScoped<IUserRepository, UserRepository>();
+        builder.Services.AddScoped<IRoleRepository, RoleRepository>();
+        builder.Services.AddScoped<IAddressRepository, AddressRepository>();
+        // F3 – Catalog
+        builder.Services.AddScoped<IProductRepository, ProductRepository>();
+        builder.Services.AddScoped<ICategoryRepository, CategoryRepository>();
+        builder.Services.AddScoped<IBrandRepository, BrandRepository>();
+        builder.Services.AddScoped<ISizeRepository, SizeRepository>();
+        builder.Services.AddScoped<IColorRepository, ColorRepository>();
+        builder.Services.AddScoped<IProductVariantRepository, ProductVariantRepository>();
+
+        // ── Business Services ─────────────────────────────────────────────
+        // F1 – Auth
+        builder.Services.AddScoped<IJwtService, JwtService>();
+        builder.Services.AddScoped<IAuthService, AuthService>();
+
+        // F2 – User Profile & Address
+        builder.Services.AddScoped<IUserProfileService, UserProfileService>();
+        builder.Services.AddScoped<IAddressService, AddressService>();
+        builder.Services.AddScoped<IAdminUserService, AdminUserService>();
+
+        // F3 – Catalog
+        builder.Services.AddScoped<IProductService, ProductService>();
+        builder.Services.AddScoped<ICategoryService, CategoryService>();
+        builder.Services.AddScoped<IBrandService, BrandService>();
+        builder.Services.AddScoped<ISizeColorService, SizeColorService>();
+        builder.Services.AddScoped<IProductVariantService, ProductVariantService>();
+
+        // F5 – Cart
+        builder.Services.AddScoped<ICartRepository, CartRepository>();
+        builder.Services.AddScoped<ICartService, CartService>();
+
+        // F9 + F10 – Order
+        builder.Services.AddScoped<IOrderRepository, OrderRepository>();
+        builder.Services.AddScoped<IOrderService, OrderService>();
+
+        // F6 – Voucher
+        builder.Services.AddScoped<IVoucherRepository, VoucherRepository>();
+        builder.Services.AddScoped<IVoucherService, VoucherService>();
+
+        // F11 – Review & Rating
+        builder.Services.AddScoped<IReviewRepository, ReviewRepository>();
+        builder.Services.AddScoped<IReviewService, ReviewService>();
+
+        // F14 – Dashboard
+        builder.Services.AddScoped<IDashboardService, DashboardService>();
+
+        // ── AutoMapper ────────────────────────────────────────────────────
+        builder.Services.AddAutoMapper(cfg =>
+        {
+            cfg.AddProfile<ShoesShop.Business.MappingProfile>();
+        });
+
+        // ── JWT Authentication ────────────────────────────────────────────
+        var jwtKey      = builder.Configuration["JwtSettings:SecretKey"]!;
+        var jwtIssuer   = builder.Configuration["JwtSettings:Issuer"]!;
+        var jwtAudience = builder.Configuration["JwtSettings:Audience"]!;
+
+        builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+            .AddJwtBearer(options =>
+            {
+                options.TokenValidationParameters = new TokenValidationParameters
+                {
+                    ValidateIssuer           = true,
+                    ValidateAudience         = true,
+                    ValidateLifetime         = true,
+                    ValidateIssuerSigningKey = true,
+                    ValidIssuer              = jwtIssuer,
+                    ValidAudience            = jwtAudience,
+                    IssuerSigningKey         = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey)),
+                    ClockSkew                = TimeSpan.Zero
+                };
+            });
+
+        builder.Services.AddAuthorization();
+
+        // ── CORS ──────────────────────────────────────────────────────────
+        builder.Services.AddCors(options =>
+        {
+            options.AddPolicy("AllowAll", policy =>
+            {
+                policy.AllowAnyOrigin()
+                      .AllowAnyMethod()
+                      .AllowAnyHeader();
+            });
+        });
+
+        // ── Controllers + OData ───────────────────────────────────────────
+        var odataBuilder = new ODataConventionModelBuilder();
+        odataBuilder.EntitySet<Product>("Products");
+
+        builder.Services.AddControllers()
+            .AddOData(options => options
+                .Select()
+                .Filter()
+                .OrderBy()
+                .Count()
+                .Expand()
+                .SetMaxTop(100)
+            );
+
+        // ── Swagger ───────────────────────────────────────────────────────
+        builder.Services.AddEndpointsApiExplorer();
+        builder.Services.AddSwaggerGen(c =>
+        {
+            c.SwaggerDoc("v1", new OpenApiInfo { Title = "ShoesShop API", Version = "v1" });
+
+            c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+            {
+                Name         = "Authorization",
+                Type         = SecuritySchemeType.Http,
+                Scheme       = "bearer",
+                BearerFormat = "JWT",
+                In           = ParameterLocation.Header,
+                Description  = "Nhập JWT token. Ví dụ: Bearer eyJhbGci..."
+            });
+
+            c.AddSecurityRequirement(new OpenApiSecurityRequirement
+            {
+                {
+                    new OpenApiSecurityScheme
+                    {
+                        Reference = new OpenApiReference
+                        {
+                            Type = ReferenceType.SecurityScheme,
+                            Id   = "Bearer"
+                        }
+                    },
+                    Array.Empty<string>()
+                }
+            });
+        });
+
+        // ════════════════════════════════════════════════════════════════
+        var app = builder.Build();
+
+        await DbInitializer.SeedRolesAsync(app.Services);
+
+        if (app.Environment.IsDevelopment())
+        {
+            app.UseSwagger();
+            app.UseSwaggerUI();
+        }
+
+        app.UseHttpsRedirection();
+        app.UseCors("AllowAll");
+
+        app.UseAuthentication();
+        app.UseAuthorization();
+
+        app.MapControllers();
+
+        await app.RunAsync();
+    }
 }
-
-app.UseHttpsRedirection();
-app.UseCors("AllowAll");
-app.UseAuthorization();
-
-app.MapControllers();
-
-app.Run();

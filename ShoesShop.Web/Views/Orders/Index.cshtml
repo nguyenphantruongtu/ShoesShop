@@ -1,0 +1,125 @@
+@using System.Text.Json
+@model JsonElement?
+@{
+    ViewData["Title"] = "Đơn hàng — STRIDEX";
+    var statuses = new[] { "Pending","Confirmed","Preparing","Shipping","Delivered","Cancelled" };
+    var statusVi = new Dictionary<string,string>{
+        ["Pending"]="Chờ xác nhận",["Confirmed"]="Đã xác nhận",["Preparing"]="Đang chuẩn bị",
+        ["Shipping"]="Đang giao",["Delivered"]="Đã giao",["Cancelled"]="Đã hủy"
+    };
+    string curSt = ViewBag.Status ?? "";
+    int page     = ViewBag.Page ?? 1;
+}
+
+<div class="container-xxl px-4 py-5">
+
+    <!-- Header -->
+    <div class="mb-5">
+        <span class="section-eyebrow">Tài khoản</span>
+        <h1 class="section-title mb-0">Đơn hàng của tôi</h1>
+    </div>
+
+    <!-- Status tabs -->
+    <div style="border-bottom:2px solid #eee;margin-bottom:32px;overflow-x:auto;white-space:nowrap">
+        <a asp-action="Index"
+           style="display:inline-block;padding:12px 0;margin-right:28px;font-size:0.78rem;font-weight:700;
+                  text-transform:uppercase;letter-spacing:0.1em;text-decoration:none;
+                  color:@(string.IsNullOrEmpty(curSt)?"#000":"#888");
+                  border-bottom:@(string.IsNullOrEmpty(curSt)?"2px solid #000":"2px solid transparent");
+                  margin-bottom:-2px">
+            Tất cả
+        </a>
+        @foreach (var s in statuses)
+        {
+            <a asp-action="Index" asp-route-status="@s" asp-route-page="1"
+               style="display:inline-block;padding:12px 0;margin-right:28px;font-size:0.78rem;font-weight:700;
+                      text-transform:uppercase;letter-spacing:0.1em;text-decoration:none;
+                      color:@(curSt==s?"#000":"#888");
+                      border-bottom:@(curSt==s?"2px solid #000":"2px solid transparent");
+                      margin-bottom:-2px">
+                @statusVi[s]
+            </a>
+        }
+    </div>
+
+    @if (Model is JsonElement data && data.ValueKind != JsonValueKind.Undefined)
+    {
+        var orders     = data.TryGetProperty("orders", out var o)    ? o  : data;
+        var totalPages = data.TryGetProperty("totalPages", out var tp) ? tp.GetInt32() : 1;
+
+        if (orders.ValueKind == JsonValueKind.Array && orders.GetArrayLength() == 0)
+        {
+            <div class="text-center py-5" style="border-top:2px solid #000;padding-top:48px!important">
+                <i class="bi bi-bag-x" style="font-size:3.5rem;color:#ddd"></i>
+                <h3 style="font-size:1rem;font-weight:800;text-transform:uppercase;letter-spacing:0.1em;margin:20px 0 8px">
+                    Chưa có đơn hàng@(string.IsNullOrEmpty(curSt) ? "" : " nào")
+                </h3>
+                <p style="font-size:0.85rem;color:#888;margin-bottom:28px">
+                    @(string.IsNullOrEmpty(curSt) ? "Bắt đầu mua sắm và đơn hàng sẽ xuất hiện ở đây." : "Không có đơn hàng nào trong trạng thái này.")
+                </p>
+                <a asp-controller="Products" asp-action="Index" class="btn-black">Mua sắm ngay</a>
+            </div>
+        }
+        else
+        {
+            <div class="d-flex flex-column gap-3">
+            @if (orders.ValueKind == JsonValueKind.Array)
+            {
+                foreach (var ord in orders.EnumerateArray())
+                {
+                    var oid    = ord.GetProperty("orderId").GetInt32();
+                    var code   = ord.GetProperty("orderCode").GetString();
+                    var ostats = ord.GetProperty("orderStatus").GetString() ?? "";
+                    var total2 = ord.GetProperty("totalAmount").GetDecimal();
+                    var itemCt = ord.GetProperty("itemCount").GetInt32();
+                    var date   = ord.GetProperty("createdAt").GetDateTime();
+                    <div style="border:1px solid #eee;padding:20px 24px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px">
+                        <div style="display:flex;align-items:center;gap:16px">
+                            <!-- Status dot -->
+                            <div class="status-badge status-@ostats" style="align-self:flex-start;margin-top:2px">
+                                @(statusVi.GetValueOrDefault(ostats, ostats))
+                            </div>
+                            <div>
+                                <div style="font-weight:800;font-size:0.88rem;text-transform:uppercase;letter-spacing:0.04em">@code</div>
+                                <div style="font-size:0.75rem;color:#888;margin-top:3px">
+                                    @date.ToString("HH:mm dd/MM/yyyy") &nbsp;·&nbsp; @itemCt sản phẩm
+                                </div>
+                            </div>
+                        </div>
+                        <div style="display:flex;align-items:center;gap:20px">
+                            <div style="font-weight:900;font-size:1.05rem">@total2.ToString("N0")₫</div>
+                            <a asp-action="Detail" asp-route-id="@oid"
+                               style="font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;
+                                      color:#000;text-decoration:none;border-bottom:1px solid #000;white-space:nowrap">
+                                Xem chi tiết →
+                            </a>
+                        </div>
+                    </div>
+                }
+            }
+            </div>
+
+            @if (totalPages > 1)
+            {
+                <div class="d-flex justify-content-center mt-5">
+                    <ul class="pagination pagination-clean">
+                        @for (int i = 1; i <= totalPages; i++)
+                        {
+                            <li class="page-item @(i==page?"active":"")">
+                                <a class="page-link"
+                                   asp-action="Index" asp-route-status="@curSt" asp-route-page="@i">@i</a>
+                            </li>
+                        }
+                    </ul>
+                </div>
+            }
+        }
+    }
+    else
+    {
+        <div class="text-center py-5">
+            <i class="bi bi-exclamation-circle" style="font-size:3rem;color:#ddd"></i>
+            <p style="margin-top:16px;font-size:0.85rem;color:#888">Không thể tải danh sách đơn hàng. Vui lòng thử lại.</p>
+        </div>
+    }
+</div>
