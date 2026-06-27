@@ -1,229 +1,249 @@
-﻿@{
-    ViewData["Title"] = "Cửa Hàng - Shoes Shop";
+@{
+    ViewData["Title"] = "Sản phẩm — STRIDEX";
+    string initQ = Context.Request.Query["q"].ToString();
 }
 
-<div class="container mt-5">
-    <div class="row">
-        <div class="col-md-3">
-            <div class="card p-3 shadow-sm border-0">
-                <h5 class="font-weight-bold mb-3">BỘ LỌC SẢN PHẨM</h5>
+<div class="container-xxl px-4 py-5">
 
-                <div class="mb-3">
-                    <label class="form-label font-weight-bold text-secondary">Giới tính</label>
-                    <select id="filterGender" class="form-select form-control" onchange="resetAndLoad()">
-                        <option value="">Tất cả</option>
-                        <option value="Men">Nam</option>
-                        <option value="Women">Nữ</option>
-                        <option value="Unisex">Unisex</option>
+    <!-- ── Page header ── -->
+    <div class="mb-5">
+        <span class="section-eyebrow">Cửa hàng</span>
+        <h1 class="section-title mb-0">Tất cả sản phẩm</h1>
+    </div>
+
+    <div class="row g-5">
+
+        <!-- ═══ SIDEBAR FILTER ═══ -->
+        <div class="col-lg-2 col-md-3">
+            <div class="filter-sidebar">
+
+                <!-- Search -->
+                <div class="filter-group" style="padding-top:0">
+                    <div class="filter-title" style="margin-bottom:10px">Tìm kiếm</div>
+                    <div style="position:relative">
+                        <input type="text" id="searchInput" value="@initQ"
+                               placeholder="Nhập tên giày..."
+                               class="form-control-clean"
+                               style="padding-right:36px">
+                        <i class="bi bi-search"
+                           style="position:absolute;right:10px;top:50%;transform:translateY(-50%);color:#888;font-size:0.82rem"></i>
+                    </div>
+                </div>
+
+                <!-- Price -->
+                <div class="filter-group">
+                    <div class="filter-title">Khoảng giá</div>
+                    @foreach (var p in new[] { ("","Tất cả"), ("500000","Dưới 500K"), ("1000000","Dưới 1 triệu"), ("2000000","Dưới 2 triệu"), ("5000000","Dưới 5 triệu") })
+                    {
+                        <label class="filter-option">
+                            <input type="radio" name="price" value="@p.Item1"
+                                   @(p.Item1 == "" ? "checked" : "")
+                                   onchange="resetAndLoad()">
+                            @p.Item2
+                        </label>
+                    }
+                </div>
+
+                <!-- Sort -->
+                <div class="filter-group">
+                    <div class="filter-title">Sắp xếp</div>
+                    <select id="sortSelect" class="form-control-clean" onchange="resetAndLoad()" style="cursor:pointer">
+                        <option value="ProductId desc">Mới nhất</option>
+                        <option value="BasePrice asc">Giá thấp → cao</option>
+                        <option value="BasePrice desc">Giá cao → thấp</option>
+                        <option value="ProductName asc">Tên A → Z</option>
                     </select>
                 </div>
 
-                <div class="mb-3">
-                    <label class="form-label font-weight-bold text-secondary">Khoảng Giá (Đến)</label>
-                    <select id="filterPrice" class="form-select form-control" onchange="resetAndLoad()">
-                        <option value="">Tất cả mức giá</option>
-                        <option value="1000000">Dưới 1,000,000 đ</option>
-                        <option value="2000000">Dưới 2,000,000 đ</option>
-                        <option value="5000000">Dưới 5,000,000 đ</option>
-                    </select>
-                </div>
-
-                <div class="mb-3">
-                    <label class="form-label font-weight-bold text-secondary">Sắp xếp theo</label>
-                    <select id="sortOrder" class="form-select form-control" onchange="resetAndLoad()">
-                        <option value="ProductName asc">Tên: A -> Z</option>
-                        <option value="BasePrice asc">Giá: Thấp đến Cao</option>
-                        <option value="BasePrice desc">Giá: Cao đến Thấp</option>
-                    </select>
-                </div>
+                <!-- Reset -->
+                <button onclick="resetFilters()" class="btn-white w-100 mt-2" style="font-size:0.75rem;padding:9px 0;">
+                    <i class="bi bi-x-circle me-1"></i>Xóa bộ lọc
+                </button>
             </div>
         </div>
 
-        <div class="col-md-9">
-            <div class="row" id="productContainer">
+        <!-- ═══ PRODUCT GRID ═══ -->
+        <div class="col-lg-10 col-md-9">
+
+            <!-- Active filters bar -->
+            <div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-2">
+                <div id="activeFilters" class="d-flex gap-2 flex-wrap"></div>
+                <span id="resultCount" style="font-size:0.8rem;color:#888"></span>
             </div>
 
-            <div class="d-flex justify-content-center mt-4">
-                <nav>
-                    <ul class="pagination" id="paginationContainer">
-                    </ul>
-                </nav>
+            <!-- Loading -->
+            <div id="loading" class="text-center py-5">
+                <div class="spinner-border" role="status" style="width:28px;height:28px;border-width:2px"></div>
+                <p style="font-size:0.82rem;color:#888;margin-top:10px">Đang tải sản phẩm...</p>
+            </div>
+
+            <!-- Grid -->
+            <div id="productGrid" class="row row-cols-2 row-cols-md-3 row-cols-xl-4 g-3 d-none"></div>
+
+            <!-- Empty -->
+            <div id="emptyState" class="text-center py-5 d-none">
+                <i class="bi bi-search" style="font-size:3rem;color:#ddd"></i>
+                <p style="margin-top:16px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;font-size:0.88rem">Không tìm thấy sản phẩm</p>
+                <p style="font-size:0.82rem;color:#888">Thử thay đổi bộ lọc hoặc từ khóa tìm kiếm.</p>
+            </div>
+
+            <!-- Pagination -->
+            <div id="paginationWrap" class="d-flex justify-content-center mt-5 d-none">
+                <ul class="pagination pagination-clean" id="pagination"></ul>
             </div>
         </div>
     </div>
 </div>
 
 @section Scripts {
-    <script>
-        let pageSize = 6;
-        let currentPage = 0;
+<script>
+const API_BASE = 'https://localhost:7214';
+const PAGE_SIZE = 12;
+let currentPage = 0;
 
-        $(document).ready(function () {
-            loadProducts();
-        });
+$(document).ready(function() {
+    // auto-search on type (debounced)
+    let timer;
+    $('#searchInput').on('input', function() {
+        clearTimeout(timer);
+        timer = setTimeout(() => { currentPage = 0; loadProducts(); }, 380);
+    });
+    loadProducts();
+});
 
-        function resetAndLoad() {
-            currentPage = 0;
-            loadProducts();
-        }
+function resetAndLoad() { currentPage = 0; loadProducts(); }
 
-        function loadProducts() {
-            let gender = $("#filterGender").val();
-            let maxPrice = $("#filterPrice").val();
-            let sort = $("#sortOrder").val();
+function resetFilters() {
+    $('input[name="price"]').first().prop('checked', true);
+    $('#sortSelect').val('ProductId desc');
+    $('#searchInput').val('');
+    resetAndLoad();
+}
 
-            // Đường dẫn gọi OData Controller chuẩn chỉnh
-            let odataUrl = `https://localhost:7214/api/products?$top=${pageSize}&$skip=${currentPage * pageSize}&$count=true`;
+function loadProducts() {
+    const maxPrice = $('input[name="price"]:checked').val();
+    const sort     = $('#sortSelect').val();
+    const q        = $('#searchInput').val().trim();
 
-            let filters = [];
+    let url = `${API_BASE}/api/products?$top=${PAGE_SIZE}&$skip=${currentPage * PAGE_SIZE}&$count=true`;
 
-            if (gender) {
-                // Viết Hoa chữ cái đầu theo chuẩn thuộc tính Entity Model DTO
-                filters.push(`Gender eq '${gender}'`);
-            }
-            if (maxPrice) {
-                // Viết Hoa chữ cái đầu theo chuẩn thuộc tính Entity Model DTO
-                filters.push(`BasePrice le ${maxPrice}`);
-            }
+    let filters = [];
+    if (maxPrice) filters.push(`BasePrice le ${maxPrice}`);
+    if (filters.length) url += `&$filter=${filters.join(' and ')}`;
+    if (sort)     url += `&$orderby=${sort}`;
 
-            if (filters.length > 0) {
-                odataUrl += `&$filter=${filters.join(' and ')}`;
-            }
+    // Update active filters display
+    updateActiveFilters(maxPrice, q);
 
-            if (sort) {
-                odataUrl += `&$orderby=${sort}`;
-            }
+    $('#loading').show();
+    $('#productGrid, #emptyState, #paginationWrap').addClass('d-none');
 
-            console.log("Đang gọi API tại URL: ", odataUrl);
+    // If search query, use search endpoint then filter client-side
+    const fetchUrl = q
+        ? `${API_BASE}/api/products/search?keyword=${encodeURIComponent(q)}`
+        : url;
 
-            $.ajax({
-                url: odataUrl,
-                type: "GET",
-                dataType: "json",
-                success: function (response) {
-                    console.log("Dữ liệu thô OData trả về:", response);
+    $.ajax({
+        url: fetchUrl,
+        type: 'GET',
+        success: function(res) {
+            let products = [];
+            let total = 0;
+            if (res && res.value !== undefined) { products = res.value; total = res['@@odata.count'] || products.length; }
+            else if (res && res.success && Array.isArray(res.data)) { products = res.data; total = products.length; }
+            else if (Array.isArray(res)) { products = res; total = products.length; }
 
-                    let products = [];
-                    let totalCount = 0;
+            $('#loading').hide();
+            $('#resultCount').text(total ? `${total} sản phẩm` : '');
 
-                    // Bóc tách chính xác gói dữ liệu chuẩn OData v4
-                    if (response && response.value !== undefined) {
-                        products = response.value;
-                        totalCount = response["@@odata.count"] || products.length; // Sửa ký tự bọc @@ cho Razor view không hiểu nhầm
-                    } else if (Array.isArray(response)) {
-                        products = response;
-                        totalCount = response.length;
-                    }
-
-                    renderProducts(products);
-                    renderPagination(totalCount);
-                },
-                error: function (xhr, status, error) {
-                    console.error("Lỗi hệ thống AJAX:", xhr);
-
-                    let errorMsg = "Không thể lấy dữ liệu từ API (Mã lỗi: " + xhr.status + ").";
-                    if(xhr.responseJSON && xhr.responseJSON.error) {
-                        errorMsg += "<br/><small class='text-muted'>Chi tiết: " + xhr.responseJSON.error.message + "</small>";
-                    } else if (xhr.responseText) {
-                        errorMsg += "<br/><small class='text-muted text-break text-wrap'>Phản hồi hệ thống: " + xhr.responseText.substring(0, 200) + "...</small>";
-                    }
-
-                    $("#productContainer").html(`<div class="col-12 text-center text-danger py-5">${errorMsg}</div>`);
-                }
-            });
-        }
-
-        function renderProducts(products) {
-            let html = "";
-
-            if (!products || products.length === 0) {
-                $("#productContainer").html('<div class="col-12 text-center text-muted py-5">Không tìm thấy sản phẩm nào khớp với bộ lọc.</div>');
-                $("#paginationContainer").html("");
+            if (!products.length) {
+                $('#emptyState').removeClass('d-none');
                 return;
             }
+            renderGrid(products);
+            if (!q) renderPagination(total);
+        },
+        error: function() {
+            $('#loading').hide();
+            $('#emptyState').removeClass('d-none');
+        }
+    });
+}
 
-            products.forEach(p => {
-                let id = p.productId || p.ProductId || p.id || p.Id;
-                let name = p.productName || p.ProductName || "Sản phẩm không tên";
-                let basePrice = p.basePrice || p.BasePrice || 0;
-                let salePrice = p.salePrice || p.SalePrice || 0;
-                let shortDesc = p.shortDescription || p.ShortDescription || "Đang cập nhật mô tả...";
+function renderGrid(products) {
+    let html = '';
+    products.forEach(p => {
+        const id      = p.productId || p.ProductId;
+        const name    = p.productName || p.ProductName || '';
+        const base    = p.basePrice || p.BasePrice || 0;
+        const sale    = p.salePrice || p.SalePrice;
+        const hasSale = sale && sale < base;
+        const price   = hasSale ? sale : base;
+        const salePct = hasSale ? Math.round((1 - sale/base)*100) : 0;
+        const imgs    = p.imageUrls || p.ImageUrls || [];
+        const img     = imgs.length ? imgs[0] : 'https://placehold.co/400x400/f3f3f3/888?text=No+Image';
+        const brand   = p.brandName || p.BrandName || 'Sneaker';
+        const url     = '/Products/Detail/' + id;
 
-                let imgUrl = "/images/no-image.png";
-                let images = p.imageUrls || p.ImageUrls || p.productImages || p.ProductImages;
-
-                if (images && images.length > 0) {
-                    if (typeof images[0] === 'string') {
-                        imgUrl = images[0];
-                    } else if (images[0].imageUrl || images[0].ImageUrl) {
-                        imgUrl = images[0].imageUrl || images[0].ImageUrl;
-                    }
-                }
-
-                let priceHtml = "";
-                if (salePrice && salePrice > 0) {
-                    priceHtml = `
-                        <span class="text-danger font-weight-bold">${salePrice.toLocaleString('vi-VN')} đ</span>
-                        <del class="text-muted small ms-2">${basePrice.toLocaleString('vi-VN')} đ</del>
-                    `;
-                } else {
-                    priceHtml = `<span class="text-danger font-weight-bold">${basePrice.toLocaleString('vi-VN')} đ</span>`;
-                }
-
-                html += `
-                    <div class="col-md-4 mb-4">
-                        <div class="card h-100 shadow-sm border-0 rounded p-2">
-                            <img src="${imgUrl}" class="card-img-top p-2" style="height: 220px; width: 100%; object-fit: cover; object-position: center;" alt="${name}">
-                            <div class="card-body d-flex flex-column justify-content-between">
-                                <div>
-                                    <h6 class="card-title font-weight-bold text-dark mb-1" style="min-height: 40px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">${name}</h6>
-                                    <p class="card-text text-muted small mb-2" style="display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden;">${shortDesc}</p>
-                                </div>
-                                <div>
-                                    <div class="mb-3">
-                                        ${priceHtml}
-                                    </div>
-                                    <a href="/products/detail/${id}" class="btn btn-sm btn-block btn-outline-primary rounded-pill w-100">Xem chi tiết</a>
-                                </div>
-                            </div>
-                        </div>
+        html += `
+        <div class="col">
+            <div class="product-card">
+                <div class="product-card-img-wrap">
+                    ${hasSale ? `<span class="product-badge product-badge-sale">-${salePct}%</span>` : ''}
+                    <img src="${img}" alt="${name}" loading="lazy"
+                         onerror="this.src='https://placehold.co/400x400/f3f3f3/888?text=No+Image'">
+                    <div class="product-card-overlay">
+                        <a href="${url}" class="product-card-quick-btn">Xem chi tiết</a>
                     </div>
-                `;
-            });
+                </div>
+                <div class="product-card-body px-1">
+                    <div class="product-card-category">${brand}</div>
+                    <div class="product-card-name"><a href="${url}" style="color:#000">${name}</a></div>
+                    <div class="product-card-price">
+                        ${hasSale
+                            ? `<span class="sale">${price.toLocaleString('vi-VN')}₫</span><span class="original">${base.toLocaleString('vi-VN')}₫</span>`
+                            : `${price.toLocaleString('vi-VN')}₫`
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>`;
+    });
+    $('#productGrid').html(html).removeClass('d-none');
+}
 
-            $("#productContainer").html(html);
-        }
+function renderPagination(total) {
+    const pages = Math.ceil(total / PAGE_SIZE);
+    if (pages <= 1) { $('#paginationWrap').addClass('d-none'); return; }
+    let html = `<li class="page-item ${currentPage===0?'disabled':''}">
+        <a class="page-link" href="#" onclick="changePage(${currentPage-1}); return false;">‹</a></li>`;
+    for (let i = 0; i < pages; i++) {
+        html += `<li class="page-item ${i===currentPage?'active':''}">
+            <a class="page-link" href="#" onclick="changePage(${i}); return false;">${i+1}</a></li>`;
+    }
+    html += `<li class="page-item ${currentPage===pages-1?'disabled':''}">
+        <a class="page-link" href="#" onclick="changePage(${currentPage+1}); return false;">›</a></li>`;
+    $('#pagination').html(html);
+    $('#paginationWrap').removeClass('d-none');
+}
 
-        function renderPagination(totalCount) {
-            let totalPages = Math.ceil(totalCount / pageSize);
-            let html = "";
+function changePage(p) {
+    currentPage = p;
+    loadProducts();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+}
 
-            if (totalPages <= 1) {
-                $("#paginationContainer").html("");
-                return;
-            }
+function updateActiveFilters(maxPrice, q) {
+    let chips = '';
+    if (maxPrice) chips += `<span class="filter-chip active">Dưới ${(+maxPrice).toLocaleString('vi-VN')}₫ <i class="bi bi-x" onclick="clearFilter('price')"></i></span>`;
+    if (q)        chips += `<span class="filter-chip active">"${q}" <i class="bi bi-x" onclick="clearSearch()"></i></span>`;
+    $('#activeFilters').html(chips);
+}
 
-            html += `<li class="page-item ${currentPage === 0 ? 'disabled' : ''}">
-                        <a class="page-link" href="javascript:void(0)" onclick="changePage(${currentPage - 1})">«</a>
-                     </li>`;
-
-            for (let i = 0; i < totalPages; i++) {
-                html += `<li class="page-item ${currentPage === i ? 'active' : ''}">
-                            <a class="page-link" href="javascript:void(0)" onclick="changePage(${i})">${i + 1}</a>
-                         </li>`;
-            }
-
-            html += `<li class="page-item ${currentPage === totalPages - 1 ? 'disabled' : ''}">
-                        <a class="page-link" href="javascript:void(0)" onclick="changePage(${currentPage + 1})">»</a>
-                     </li>`;
-
-            $("#paginationContainer").html(html);
-        }
-
-        function changePage(pageIndex) {
-            currentPage = pageIndex;
-            loadProducts();
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-        }
-    </script>
+function clearFilter(name) {
+    $(`input[name="${name}"]`).first().prop('checked', true);
+    resetAndLoad();
+}
+function clearSearch() { $('#searchInput').val(''); resetAndLoad(); }
+</script>
 }

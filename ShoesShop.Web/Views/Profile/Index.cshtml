@@ -1,0 +1,424 @@
+@model ShoesShop.Web.Models.Profile.ProfilePageViewModel
+
+@{
+    ViewData["Title"] = "Tài khoản — STRIDEX";
+    var profile    = Model.Profile;
+    var addresses  = Model.Addresses;
+    var activeTab  = TempData["ActiveTab"]?.ToString() ?? "profile";
+
+    var roleBadge = profile.Role switch {
+        "Admin" => "danger",
+        "Staff" => "warning",
+        _       => "dark"
+    };
+    var roleLabel = profile.Role switch {
+        "Admin" => "Quản trị viên",
+        "Staff" => "Nhân viên",
+        _       => "Khách hàng"
+    };
+}
+
+<div class="container-xxl px-4 py-5">
+
+    <!-- Header -->
+    <div class="mb-5">
+        <span class="section-eyebrow">Cá nhân</span>
+        <h1 class="section-title mb-0">Tài khoản của tôi</h1>
+    </div>
+
+    <div class="row g-5">
+
+        <!-- LEFT — Profile card + tabs -->
+        <div class="col-lg-8">
+
+            <!-- Avatar + info bar -->
+            <div style="border:2px solid #000;padding:24px 28px;margin-bottom:24px;display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap">
+                <div style="display:flex;align-items:center;gap:16px">
+                    @if (!string.IsNullOrEmpty(profile.AvatarUrl))
+                    {
+                        <img src="@profile.AvatarUrl" style="width:64px;height:64px;border-radius:50%;object-fit:cover;border:2px solid #eee"
+                             onerror="this.style.display='none'">
+                    }
+                    else
+                    {
+                        <div style="width:64px;height:64px;border-radius:50%;background:#000;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+                            <span style="color:#fff;font-weight:900;font-size:1.4rem">@profile.FullName.Substring(0,1).ToUpper()</span>
+                        </div>
+                    }
+                    <div>
+                        <div style="font-weight:900;font-size:1.1rem;text-transform:uppercase;letter-spacing:0.02em">@profile.FullName</div>
+                        <div style="display:flex;gap:8px;align-items:center;margin-top:4px">
+                            <span style="font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;
+                                         background:@(profile.Role=="Admin"?"#e63946":profile.Role=="Staff"?"#f5a623":"#000");
+                                         color:#fff;padding:2px 8px">@roleLabel</span>
+                            @if (profile.IsActive)
+                            {
+                                <span style="font-size:0.72rem;font-weight:700;color:#2d6a4f"><i class="bi bi-circle-fill me-1" style="font-size:0.5rem"></i>Hoạt động</span>
+                            }
+                        </div>
+                    </div>
+                </div>
+                <button class="btn-white" style="font-size:0.75rem;padding:9px 18px"
+                        data-bs-toggle="modal" data-bs-target="#editProfileModal">
+                    <i class="bi bi-pencil me-1"></i>Chỉnh sửa
+                </button>
+            </div>
+
+            <!-- Tabs -->
+            <div style="border-bottom:2px solid #eee;margin-bottom:24px">
+                <button id="profile-tab" onclick="showTab('profile')"
+                        style="padding:12px 0;margin-right:28px;font-size:0.78rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;
+                               border:none;background:none;cursor:pointer;
+                               color:@(activeTab=="profile"?"#000":"#888");
+                               border-bottom:@(activeTab=="profile"?"2px solid #000":"2px solid transparent");
+                               margin-bottom:-2px">
+                    <i class="bi bi-person me-1"></i>Thông tin
+                </button>
+                <button id="address-tab" onclick="showTab('addresses')"
+                        style="padding:12px 0;margin-right:28px;font-size:0.78rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;
+                               border:none;background:none;cursor:pointer;
+                               color:@(activeTab=="addresses"?"#000":"#888");
+                               border-bottom:@(activeTab=="addresses"?"2px solid #000":"2px solid transparent");
+                               margin-bottom:-2px">
+                    <i class="bi bi-geo-alt me-1"></i>Địa chỉ
+                    @if (addresses.Any())
+                    {
+                        <span style="background:#000;color:#fff;font-size:0.65rem;padding:1px 6px;margin-left:4px">@addresses.Count</span>
+                    }
+                </button>
+            </div>
+
+            <!-- Tab: Thông tin cá nhân -->
+            <div id="pane-profile" style="display:@(activeTab=="profile"?"block":"none")">
+                <div style="border:1px solid #eee">
+                    <div style="padding:16px 24px;border-bottom:1px solid #eee;font-size:0.75rem;font-weight:800;text-transform:uppercase;letter-spacing:0.12em">Chi tiết tài khoản</div>
+                    <div class="row g-0" style="padding:0">
+                        @{
+                            var fields = new[] {
+                                ("Email",     profile.Email),
+                                ("Điện thoại",string.IsNullOrEmpty(profile.Phone) ? "Chưa cập nhật" : profile.Phone),
+                                ("Ngày sinh", profile.DateOfBirth.HasValue ? profile.DateOfBirth.Value.ToString("dd/MM/yyyy") : "Chưa cập nhật"),
+                                ("Giới tính", string.IsNullOrEmpty(profile.Gender) ? "Chưa cập nhật" : profile.Gender),
+                                ("Thành viên từ", profile.CreatedAt.ToString("dd/MM/yyyy"))
+                            };
+                        }
+                        @foreach (var (label, value) in fields)
+                        {
+                            <div class="col-md-6" style="padding:16px 24px;border-bottom:1px solid #f3f3f3">
+                                <div style="font-size:0.72rem;color:#888;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:4px">@label</div>
+                                <div style="font-weight:600;font-size:0.88rem">@value</div>
+                            </div>
+                        }
+                        <div class="col-md-6" style="padding:16px 24px;border-bottom:1px solid #f3f3f3">
+                            <div style="font-size:0.72rem;color:#888;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:4px">Email xác minh</div>
+                            <div style="font-size:0.88rem;font-weight:600;color:@(profile.EmailConfirmed?"#2d6a4f":"#e63946")">
+                                <i class="bi bi-@(profile.EmailConfirmed?"check-circle":"exclamation-circle") me-1"></i>
+                                @(profile.EmailConfirmed ? "Đã xác minh" : "Chưa xác minh")
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab: Địa chỉ -->
+            <div id="pane-addresses" style="display:@(activeTab=="addresses"?"block":"none")">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <span style="font-size:0.75rem;color:#888">@addresses.Count địa chỉ đã lưu</span>
+                    <button class="btn-black" style="padding:8px 16px;font-size:0.75rem"
+                            data-bs-toggle="modal" data-bs-target="#addressModal"
+                            onclick="openAddressModal(0)">
+                        <i class="bi bi-plus-lg me-1"></i>Thêm địa chỉ
+                    </button>
+                </div>
+
+                @if (!addresses.Any())
+                {
+                    <div style="border:2px dashed #eee;padding:48px;text-align:center">
+                        <i class="bi bi-geo-alt" style="font-size:3rem;color:#ddd"></i>
+                        <p style="margin:16px 0 0;font-size:0.85rem;color:#888">Chưa có địa chỉ giao hàng nào.</p>
+                    </div>
+                }
+                else
+                {
+                    <div class="d-flex flex-column gap-3">
+                        @foreach (var addr in addresses)
+                        {
+                            <div style="border:@(addr.IsDefault?"2px solid #000":"1px solid #eee");padding:16px 20px">
+                                <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px">
+                                    <div>
+                                        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+                                            <span style="font-weight:700;font-size:0.9rem">@addr.RecipientName</span>
+                                            <span style="color:#bbb">|</span>
+                                            <span style="font-size:0.82rem;color:#666">@addr.Phone</span>
+                                            @if (addr.IsDefault)
+                                            {
+                                                <span style="font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;background:#000;color:#fff;padding:2px 7px">Mặc định</span>
+                                            }
+                                        </div>
+                                        <div style="font-size:0.8rem;color:#666;margin-top:5px">
+                                            <i class="bi bi-geo-alt me-1"></i>@addr.FullAddress
+                                        </div>
+                                    </div>
+                                    <div class="d-flex gap-2">
+                                        @{
+                                            var addrJs = $"openAddressModal({addr.AddressId},'{addr.RecipientName.Replace("'","\\'")}','{addr.Phone}','{addr.Province.Replace("'","\\'")}','{addr.District.Replace("'","\\'")}','{addr.Ward.Replace("'","\\'")}','{addr.StreetAddress.Replace("'","\\'")}',{addr.IsDefault.ToString().ToLower()})";
+                                        }
+                                        <button style="border:1px solid #ddd;background:none;padding:5px 10px;cursor:pointer;font-size:0.78rem"
+                                                data-bs-toggle="modal" data-bs-target="#addressModal"
+                                                onclick="@addrJs" title="Sửa">
+                                            <i class="bi bi-pencil"></i>
+                                        </button>
+                                        @if (!addr.IsDefault)
+                                        {
+                                            <form asp-action="SetDefaultAddress" asp-controller="Profile" asp-route-addressId="@addr.AddressId" method="post" class="d-inline">
+                                                @Html.AntiForgeryToken()
+                                                <button type="submit" style="border:1px solid #ddd;background:none;padding:5px 10px;cursor:pointer;font-size:0.78rem" title="Đặt mặc định">
+                                                    <i class="bi bi-star"></i>
+                                                </button>
+                                            </form>
+                                            <form asp-action="DeleteAddress" asp-controller="Profile" asp-route-addressId="@addr.AddressId" method="post" class="d-inline"
+                                                  onsubmit="return confirm('Xóa địa chỉ này?')">
+                                                @Html.AntiForgeryToken()
+                                                <button type="submit" style="border:1px solid #ddd;background:none;padding:5px 10px;cursor:pointer;font-size:0.78rem;color:#e63946" title="Xóa">
+                                                    <i class="bi bi-trash"></i>
+                                                </button>
+                                            </form>
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+        </div>
+
+        <!-- RIGHT — Quick info + actions -->
+        <div class="col-lg-4">
+            <div style="border:1px solid #eee;padding:24px;position:sticky;top:80px">
+                <div style="font-size:0.75rem;font-weight:800;text-transform:uppercase;letter-spacing:0.12em;margin-bottom:16px">Thông tin nhanh</div>
+
+                @foreach (var (label, value, color) in new (string,string,string)[] {
+                    ("Vai trò",        roleLabel, "#000"),
+                    ("Trạng thái",     profile.IsActive ? "Hoạt động" : "Bị khóa",
+                                       profile.IsActive ? "#2d6a4f" : "#e63946"),
+                    ("Email",          profile.EmailConfirmed ? "Đã xác minh" : "Chưa xác minh",
+                                       profile.EmailConfirmed ? "#2d6a4f" : "#f5a623"),
+                    ("Địa chỉ đã lưu", addresses.Count + " địa chỉ", "#000"),
+                })
+                {
+                    <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid #f3f3f3">
+                        <span style="font-size:0.78rem;color:#888">@label</span>
+                        <span style="font-size:0.8rem;font-weight:700;color:@color">@value</span>
+                    </div>
+                }
+
+                <div class="mt-4 d-flex flex-column gap-2">
+                    <a asp-controller="Orders" asp-action="Index" class="btn-white w-100 text-center" style="padding:10px;font-size:0.78rem">
+                        <i class="bi bi-bag me-1"></i>Đơn hàng của tôi
+                    </a>
+                    <button class="add-to-cart-btn w-100" style="padding:10px;font-size:0.78rem;justify-content:center"
+                            data-bs-toggle="modal" data-bs-target="#changePasswordModal">
+                        <i class="bi bi-key me-1"></i>Đổi mật khẩu
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Chỉnh sửa thông tin -->
+<div class="modal fade" id="editProfileModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0" style="border-radius:0">
+            <div class="modal-header border-0 pb-0">
+                <h5 style="font-size:0.85rem;font-weight:800;text-transform:uppercase;letter-spacing:0.1em">Chỉnh sửa thông tin</h5>
+                <button class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form asp-action="UpdateProfile" asp-controller="Profile" method="post">
+                @Html.AntiForgeryToken()
+                <div class="modal-body p-4">
+                    <div class="mb-3">
+                        <label class="form-label-clean">Họ và tên <span style="color:#e63946">*</span></label>
+                        <input type="text" name="FullName" class="form-control-clean" value="@profile.FullName" required maxlength="100">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label-clean">Số điện thoại</label>
+                        <input type="tel" name="Phone" class="form-control-clean" value="@profile.Phone" maxlength="20">
+                    </div>
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label-clean">Ngày sinh</label>
+                            <input type="date" name="DateOfBirth" class="form-control-clean"
+                                   value="@(profile.DateOfBirth.HasValue ? profile.DateOfBirth.Value.ToString("yyyy-MM-dd") : "")">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label-clean">Giới tính</label>
+                            <select name="Gender" class="form-control-clean" style="padding:10px 14px">
+                                <option value="">-- Chọn --</option>
+                                <option value="Nam"  selected="@(profile.Gender=="Nam")">Nam</option>
+                                <option value="Nữ"   selected="@(profile.Gender=="Nữ")">Nữ</option>
+                                <option value="Khác" selected="@(profile.Gender=="Khác")">Khác</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="form-label-clean">URL ảnh đại diện</label>
+                        <input type="url" name="AvatarUrl" class="form-control-clean"
+                               value="@profile.AvatarUrl" maxlength="500"
+                               placeholder="https://example.com/avatar.jpg">
+                    </div>
+                </div>
+                <div class="modal-footer border-0 justify-content-end gap-2">
+                    <button type="button" class="btn-white" data-bs-dismiss="modal">Hủy</button>
+                    <button type="submit" class="btn-black">Lưu thay đổi</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Thêm / Sửa địa chỉ -->
+<div class="modal fade" id="addressModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content border-0" style="border-radius:0">
+            <div class="modal-header border-0 pb-0">
+                <h5 style="font-size:0.85rem;font-weight:800;text-transform:uppercase;letter-spacing:0.1em" id="addressModalTitle">Thêm địa chỉ</h5>
+                <button class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="addressForm" asp-action="CreateAddress" asp-controller="Profile" method="post">
+                @Html.AntiForgeryToken()
+                <input type="hidden" id="addressFormId" name="addressId" value="0">
+                <div class="modal-body p-4">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label-clean">Tên người nhận <span style="color:#e63946">*</span></label>
+                            <input type="text" id="fldRecipientName" name="RecipientName" class="form-control-clean" required maxlength="100" placeholder="Nguyễn Văn A">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label-clean">Số điện thoại <span style="color:#e63946">*</span></label>
+                            <input type="tel" id="fldPhone" name="Phone" class="form-control-clean" required maxlength="20" placeholder="0123456789">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label-clean">Tỉnh / Thành phố <span style="color:#e63946">*</span></label>
+                            <input type="text" id="fldProvince" name="Province" class="form-control-clean" required maxlength="100" placeholder="Hồ Chí Minh">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label-clean">Quận / Huyện <span style="color:#e63946">*</span></label>
+                            <input type="text" id="fldDistrict" name="District" class="form-control-clean" required maxlength="100" placeholder="Quận 9">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label-clean">Phường / Xã</label>
+                            <input type="text" id="fldWard" name="Ward" class="form-control-clean" maxlength="100" placeholder="Phường Long Bình">
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label-clean">Địa chỉ chi tiết <span style="color:#e63946">*</span></label>
+                            <input type="text" id="fldStreetAddress" name="StreetAddress" class="form-control-clean" required maxlength="255" placeholder="Số nhà, tên đường...">
+                        </div>
+                        <div class="col-12">
+                            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:0.82rem;font-weight:600">
+                                <input type="checkbox" id="fldIsDefault" name="IsDefault" value="true" style="accent-color:#000">
+                                <span>Đặt làm địa chỉ mặc định</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer border-0 justify-content-end gap-2">
+                    <button type="button" class="btn-white" data-bs-dismiss="modal">Hủy</button>
+                    <button type="submit" id="addressSubmitBtn" class="btn-black">Thêm địa chỉ</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Đổi mật khẩu -->
+<div class="modal fade" id="changePasswordModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0" style="border-radius:0">
+            <div class="modal-header border-0 pb-0">
+                <h5 style="font-size:0.85rem;font-weight:800;text-transform:uppercase;letter-spacing:0.1em">Đổi mật khẩu</h5>
+                <button class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form asp-action="ChangePassword" asp-controller="Profile" method="post">
+                @Html.AntiForgeryToken()
+                <div class="modal-body p-4">
+                    @foreach (var (id, label, name, ph) in new[] {
+                        ("pwCurrent","Mật khẩu hiện tại","currentPassword","••••••••"),
+                        ("pwNew",    "Mật khẩu mới",     "newPassword",    "Tối thiểu 6 ký tự"),
+                        ("pwConfirm","Xác nhận mật khẩu mới","confirmPassword","Nhập lại mật khẩu mới"),
+                    })
+                    {
+                        <div class="mb-3">
+                            <label class="form-label-clean">@label <span style="color:#e63946">*</span></label>
+                            <div style="display:flex;border:1px solid #ddd">
+                                <input type="password" name="@name" id="@id" class="form-control-clean"
+                                       required minlength="6" maxlength="100" placeholder="@ph"
+                                       style="border:none;flex:1">
+                                <button type="button" onclick="togglePw('@id')"
+                                        style="border:none;background:none;padding:0 12px;cursor:pointer;color:#888">
+                                    <i class="bi bi-eye" id="@(id)Ico"></i>
+                                </button>
+                            </div>
+                        </div>
+                    }
+                </div>
+                <div class="modal-footer border-0 justify-content-end gap-2">
+                    <button type="button" class="btn-white" data-bs-dismiss="modal">Hủy</button>
+                    <button type="submit" class="btn-black">Đổi mật khẩu</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+function showTab(name) {
+    document.getElementById('pane-profile').style.display   = name==='profile'   ? 'block' : 'none';
+    document.getElementById('pane-addresses').style.display = name==='addresses' ? 'block' : 'none';
+    ['profile','address'].forEach(t => {
+        const btn = document.getElementById(t+'-tab');
+        const active = (t === 'profile' && name === 'profile') || (t === 'address' && name === 'addresses');
+        btn.style.color       = active ? '#000' : '#888';
+        btn.style.borderBottom = active ? '2px solid #000' : '2px solid transparent';
+    });
+}
+
+function togglePw(inputId) {
+    const el  = document.getElementById(inputId);
+    const ico = document.getElementById(inputId + 'Ico');
+    if (el.type === 'password') { el.type = 'text';     ico.className = 'bi bi-eye-slash'; }
+    else                        { el.type = 'password'; ico.className = 'bi bi-eye'; }
+}
+
+function openAddressModal(id, name, phone, province, district, ward, street, isDefault) {
+    const form = document.getElementById('addressForm');
+    document.getElementById('fldRecipientName').value = name      || '';
+    document.getElementById('fldPhone').value         = phone     || '';
+    document.getElementById('fldProvince').value      = province  || '';
+    document.getElementById('fldDistrict').value      = district  || '';
+    document.getElementById('fldWard').value          = ward      || '';
+    document.getElementById('fldStreetAddress').value = street    || '';
+    document.getElementById('fldIsDefault').checked   = isDefault === true;
+
+    if (id === 0) {
+        document.getElementById('addressModalTitle').textContent = 'Thêm địa chỉ';
+        form.action = '@Url.Action("CreateAddress","Profile")';
+        document.getElementById('addressFormId').value = 0;
+        document.getElementById('addressSubmitBtn').textContent = 'Thêm địa chỉ';
+    } else {
+        document.getElementById('addressModalTitle').textContent = 'Chỉnh sửa địa chỉ';
+        form.action = '@Url.Action("UpdateAddress","Profile")?addressId=' + id;
+        document.getElementById('addressFormId').value = id;
+        document.getElementById('addressSubmitBtn').textContent = 'Lưu thay đổi';
+    }
+}
+
+// Activate correct tab after redirect
+(function() {
+    const active = '@activeTab';
+    if (active === 'addresses') showTab('addresses');
+})();
+</script>
+}

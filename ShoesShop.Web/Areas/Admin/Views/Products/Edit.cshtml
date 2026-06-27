@@ -1,0 +1,239 @@
+@using System.Text.Json
+@model JsonElement
+@{
+    ViewData["Title"] = "Sửa sản phẩm";
+    var pid      = Model.GetProperty("productId").GetInt32();
+    var name     = Model.GetProperty("productName").GetString();
+    var images   = Model.TryGetProperty("images",   out var im)  ? im  : default;
+    var variants = ViewBag.Variants is JsonElement vj ? vj : default(JsonElement);
+    JsonElement? sizes  = ViewBag.Sizes  is JsonElement sj ? sj  : (JsonElement?)null;
+    JsonElement? colors = ViewBag.Colors is JsonElement cj ? cj  : (JsonElement?)null;
+}
+
+<div class="page-header d-flex justify-content-between align-items-center">
+    <div><h3><i class="bi bi-pencil-square me-2 text-primary"></i>Sửa: @name</h3></div>
+    <a asp-action="Index" class="btn btn-outline-secondary rounded-3"><i class="bi bi-arrow-left me-1"></i>Quay lại</a>
+</div>
+
+<form asp-action="Edit" asp-route-id="@pid" method="post">
+    @Html.AntiForgeryToken()
+    <partial name="_ProductForm" model="Model" />
+    <div class="mt-4 d-flex justify-content-end gap-2">
+        <a asp-action="Index" class="btn btn-light rounded-3 px-4">Hủy</a>
+        <button type="submit" class="btn btn-primary rounded-3 px-4 shadow-sm"><i class="bi bi-check-lg me-1"></i>Lưu thay đổi</button>
+    </div>
+</form>
+
+@* ── IMAGES ── *@
+<div class="card border-0 shadow-sm rounded-4 mt-4">
+  <div class="card-body p-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <h5 class="fw-bold mb-0"><i class="bi bi-images me-2 text-primary"></i>Hình ảnh sản phẩm</h5>
+      <button class="btn btn-outline-primary btn-sm rounded-3 px-3" data-bs-toggle="modal" data-bs-target="#addImgModal">
+        <i class="bi bi-plus-lg me-1"></i>Thêm ảnh
+      </button>
+    </div>
+    <div class="row g-3">
+      @if (images.ValueKind == JsonValueKind.Array)
+          foreach (var img in images.EnumerateArray())
+          {
+              var iid     = img.GetProperty("imageId").GetInt32();
+              var url     = img.GetProperty("imageUrl").GetString();
+              var primary = img.GetProperty("isPrimary").GetBoolean();
+              <div class="col-6 col-md-3 col-lg-2">
+                <div class="position-relative border rounded-3 overflow-hidden @(primary ? "border-primary border-2" : "")">
+                  <img src="@url" class="w-100" style="aspect-ratio:1;object-fit:cover" onerror="this.src='/img/no-image.png'" />
+                  @if (primary){<span class="position-absolute top-0 start-0 badge bg-primary m-1 small">Chính</span>}
+                  <div class="position-absolute bottom-0 start-0 end-0 bg-dark bg-opacity-50 d-flex justify-content-center gap-1 p-1">
+                    @if (!primary)
+                    {
+                        <form asp-action="SetPrimaryImage" asp-route-productId="@pid" asp-route-imageId="@iid" method="post">
+                          @Html.AntiForgeryToken()
+                          <button type="submit" class="btn btn-xs btn-warning rounded-2" title="Đặt làm ảnh chính" style="font-size:.7rem;padding:2px 6px"><i class="bi bi-star-fill"></i></button>
+                        </form>
+                    }
+                    <form asp-action="DeleteImage" asp-route-productId="@pid" asp-route-imageId="@iid" method="post" onsubmit="return confirm('Xóa ảnh này?')">
+                      @Html.AntiForgeryToken()
+                      <button type="submit" class="btn btn-xs btn-danger rounded-2" style="font-size:.7rem;padding:2px 6px"><i class="bi bi-trash-fill"></i></button>
+                    </form>
+                  </div>
+                </div>
+              </div>
+          }
+    </div>
+  </div>
+</div>
+
+@* ── VARIANTS ── *@
+<div class="card border-0 shadow-sm rounded-4 mt-4">
+  <div class="card-body p-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <h5 class="fw-bold mb-0"><i class="bi bi-grid-3x3-gap me-2 text-primary"></i>Biến thể (Size / Màu / Tồn kho)</h5>
+      <button class="btn btn-outline-primary btn-sm rounded-3 px-3" data-bs-toggle="modal" data-bs-target="#addVarModal">
+        <i class="bi bi-plus-lg me-1"></i>Thêm biến thể
+      </button>
+    </div>
+    <table class="table table-hover align-middle mb-0">
+      <thead class="table-light small text-uppercase">
+        <tr><th>Size</th><th>Màu</th><th>SKU</th><th>Giá riêng</th><th>Tồn kho</th><th>Trạng thái</th><th class="text-end">Thao tác</th></tr>
+      </thead>
+      <tbody>
+      @if (variants.ValueKind == JsonValueKind.Array)
+          foreach (var v in variants.EnumerateArray())
+          {
+              var vid     = v.GetProperty("variantId").GetInt32();
+              var sz      = v.GetProperty("sizeValue").GetString();
+              var clNm    = v.GetProperty("colorName").GetString();
+              var clHex   = v.TryGetProperty("hexCode", out var hx) && hx.ValueKind != JsonValueKind.Null ? hx.GetString() : null;
+              var sku     = v.TryGetProperty("sku",     out var sk) && sk.ValueKind != JsonValueKind.Null ? sk.GetString() : null;
+              var pr      = v.TryGetProperty("price",   out var pp) && pp.ValueKind != JsonValueKind.Null ? (decimal?)pp.GetDecimal() : null;
+              var stock   = v.GetProperty("stockQuantity").GetInt32();
+              var active  = v.GetProperty("isActive").GetBoolean();
+              <tr>
+                <td><span class="badge bg-light text-dark border rounded-pill px-3">@sz</span></td>
+                <td class="d-flex align-items-center gap-2">
+                  @if (!string.IsNullOrEmpty(clHex)){<span class="color-swatch" style="background:@clHex"></span>}
+                  @clNm
+                </td>
+                <td><code class="small text-muted">@(sku ?? "auto")</code></td>
+                <td class="small">@(pr.HasValue ? pr.Value.ToString("N0")+"₫" : "—")</td>
+                <td>
+                  <span class="@(stock < 5 ? "text-danger" : "text-dark") fw-bold">@stock</span>
+                  <button class="btn btn-xs btn-outline-secondary rounded-2 ms-1" style="font-size:.7rem;padding:1px 6px"
+                          onclick="openStockModal(@vid, @stock)" data-bs-toggle="modal" data-bs-target="#stockModal">Sửa</button>
+                </td>
+                <td>@if(active){<span class="badge bg-success rounded-pill px-2">Có sẵn</span>}else{<span class="badge bg-secondary rounded-pill px-2">Hết</span>}</td>
+                <td class="text-end">
+                  <button class="btn btn-sm btn-outline-primary rounded-3 me-1"
+                          onclick="openEditVarModal(@vid,'@sku','@pr?.ToString()','@active'.toLowerCase())"
+                          data-bs-toggle="modal" data-bs-target="#editVarModal"><i class="bi bi-pencil"></i></button>
+                  <form asp-action="DeleteVariant" asp-route-productId="@pid" asp-route-variantId="@vid" method="post" class="d-inline" onsubmit="return confirm('Xóa biến thể này?')">
+                    @Html.AntiForgeryToken()
+                    <button type="submit" class="btn btn-sm btn-outline-danger rounded-3"><i class="bi bi-trash"></i></button>
+                  </form>
+                </td>
+              </tr>
+          }
+      </tbody>
+    </table>
+  </div>
+</div>
+
+@* Modal: Add Image *@
+<div class="modal fade" id="addImgModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow-lg rounded-4">
+      <div class="modal-header border-0"><h5 class="modal-title fw-bold">Thêm hình ảnh</h5><button class="btn-close" data-bs-dismiss="modal"></button></div>
+      <form asp-action="AddImage" asp-route-productId="@pid" method="post">
+        @Html.AntiForgeryToken()
+        <div class="modal-body p-4">
+          <div class="mb-3"><label class="form-label fw-semibold">URL hình ảnh <span class="text-danger">*</span></label>
+            <input type="url" name="imageUrl" class="form-control rounded-3" required maxlength="500" placeholder="https://..." oninput="document.getElementById('imgPrev').src=this.value">
+            <img id="imgPrev" src="" class="mt-2 rounded-3 w-100 d-none" style="max-height:200px;object-fit:contain" onload="this.classList.remove('d-none')" onerror="this.classList.add('d-none')" /></div>
+          <div class="mb-3"><label class="form-label fw-semibold">Thứ tự</label>
+            <input type="number" name="displayOrder" class="form-control rounded-3" value="0" min="0"></div>
+          <div class="form-check"><input type="checkbox" name="isPrimary" value="true" id="chkPrim" class="form-check-input"><label class="form-check-label" for="chkPrim">Đặt làm ảnh chính</label></div>
+        </div>
+        <div class="modal-footer border-0 justify-content-center gap-2">
+          <button type="button" class="btn btn-light rounded-3 px-4" data-bs-dismiss="modal">Hủy</button>
+          <button type="submit" class="btn btn-primary rounded-3 px-4">Thêm ảnh</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+@* Modal: Add Variant *@
+<div class="modal fade" id="addVarModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow-lg rounded-4">
+      <div class="modal-header border-0"><h5 class="modal-title fw-bold">Thêm biến thể</h5><button class="btn-close" data-bs-dismiss="modal"></button></div>
+      <form asp-action="AddVariant" asp-route-productId="@pid" method="post">
+        @Html.AntiForgeryToken()
+        <div class="modal-body p-4">
+          <div class="row g-3">
+            <div class="col-6"><label class="form-label fw-semibold">Size <span class="text-danger">*</span></label>
+              <select name="sizeId" class="form-select rounded-3" required>
+                <option value="">— Chọn —</option>
+                @if (sizes is JsonElement sarr && sarr.ValueKind == JsonValueKind.Array)
+                    foreach (var s in sarr.EnumerateArray())
+                    { <option value="@s.GetProperty("sizeId").GetInt32()">@s.GetProperty("sizeValue").GetString()</option> }
+              </select></div>
+            <div class="col-6"><label class="form-label fw-semibold">Màu <span class="text-danger">*</span></label>
+              <select name="colorId" class="form-select rounded-3" required>
+                <option value="">— Chọn —</option>
+                @if (colors is JsonElement carr && carr.ValueKind == JsonValueKind.Array)
+                    foreach (var c in carr.EnumerateArray())
+                    { <option value="@c.GetProperty("colorId").GetInt32()">@c.GetProperty("colorName").GetString()</option> }
+              </select></div>
+            <div class="col-6"><label class="form-label fw-semibold">SKU</label>
+              <input type="text" name="sku" class="form-control rounded-3" maxlength="100" placeholder="Tự động tạo"></div>
+            <div class="col-6"><label class="form-label fw-semibold">Giá riêng (₫)</label>
+              <input type="number" name="price" class="form-control rounded-3" min="0" step="1000" placeholder="Dùng giá sản phẩm"></div>
+            <div class="col-6"><label class="form-label fw-semibold">Tồn kho <span class="text-danger">*</span></label>
+              <input type="number" name="stockQuantity" class="form-control rounded-3" required min="0" value="0"></div>
+            <div class="col-6 d-flex align-items-end"><div class="form-check"><input type="checkbox" name="isActive" value="true" id="varActive" class="form-check-input" checked><label class="form-check-label" for="varActive">Có sẵn</label></div></div>
+          </div>
+        </div>
+        <div class="modal-footer border-0 justify-content-center gap-2">
+          <button type="button" class="btn btn-light rounded-3 px-4" data-bs-dismiss="modal">Hủy</button>
+          <button type="submit" class="btn btn-primary rounded-3 px-4">Thêm</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+@* Modal: Edit Variant *@
+<div class="modal fade" id="editVarModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-sm">
+    <div class="modal-content border-0 shadow-lg rounded-4">
+      <div class="modal-header border-0"><h5 class="modal-title fw-bold">Sửa biến thể</h5><button class="btn-close" data-bs-dismiss="modal"></button></div>
+      <form id="editVarForm" method="post">@Html.AntiForgeryToken()
+        <div class="modal-body p-4">
+          <div class="mb-3"><label class="form-label fw-semibold">SKU</label><input type="text" name="sku" id="evSku" class="form-control rounded-3" maxlength="100"></div>
+          <div class="mb-3"><label class="form-label fw-semibold">Giá riêng (₫)</label><input type="number" name="price" id="evPrice" class="form-control rounded-3" min="0" step="1000"></div>
+          <div class="form-check"><input type="checkbox" name="isActive" id="evActive" value="true" class="form-check-input"><label class="form-check-label" for="evActive">Có sẵn</label></div>
+        </div>
+        <div class="modal-footer border-0 justify-content-center gap-2">
+          <button type="button" class="btn btn-light rounded-3 px-4" data-bs-dismiss="modal">Hủy</button>
+          <button type="submit" class="btn btn-primary rounded-3 px-4">Lưu</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+@* Modal: Update Stock *@
+<div class="modal fade" id="stockModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-sm">
+    <div class="modal-content border-0 shadow-lg rounded-4">
+      <div class="modal-header border-0"><h5 class="modal-title fw-bold">Cập nhật tồn kho</h5><button class="btn-close" data-bs-dismiss="modal"></button></div>
+      <form id="stockForm" method="post">@Html.AntiForgeryToken()
+        <div class="modal-body p-4">
+          <label class="form-label fw-semibold">Số lượng tồn kho <span class="text-danger">*</span></label>
+          <input type="number" name="stockQuantity" id="stQty" class="form-control rounded-3" required min="0">
+        </div>
+        <div class="modal-footer border-0 justify-content-center gap-2">
+          <button type="button" class="btn btn-light rounded-3 px-4" data-bs-dismiss="modal">Hủy</button>
+          <button type="submit" class="btn btn-primary rounded-3 px-4">Lưu</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+@section Scripts {
+<script>
+function openEditVarModal(vid, sku, price, active) {
+    document.getElementById('editVarForm').action = `/Admin/Products/EditVariant?productId=@pid&variantId=${vid}`;
+    document.getElementById('evSku').value   = sku !== 'null' ? sku : '';
+    document.getElementById('evPrice').value = price !== 'null' ? price : '';
+    document.getElementById('evActive').checked = active === 'true';
+}
+function openStockModal(vid, stock) {
+    document.getElementById('stockForm').action = `/Admin/Products/UpdateStock?productId=@pid&variantId=${vid}`;
+    document.getElementById('stQty').value = stock;
+}
+</script>
+}

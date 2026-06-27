@@ -1,33 +1,20 @@
-## Ignore Visual Studio temporary files, build results, and user settings
-
-# User-specific files
-*.rsuser
-*.suo
+# Visual Studio
+.vs/
 *.user
-*.userosscache
-*.sln.docstates
-
-# User-specific files (MonoDevelop/Xamarin Studio)
-*.userprefs
+*.suo
 
 # Build results
-[Dd]ebug/
-[Dd]ebugPublic/
-[Rr]elease/
-[Re]leasePublic/
-x64/
-x86/
-[Aa][Rr][Mm]/
-[Aa][Rr][Mm]64/
-bsearch/
-gprof/
-[Bb]in/
-[Oo]bj/
-[Ex]ecutable/
-[Ex]e/
+**/bin/
+**/obj/
 
-# Visual Studio 2015/2017/2019/2022 cache directory
-.vs/
+# Rider
+.idea/
 
-# Visual Studio Code code workspace
+# VS Code
 .vscode/
+
+# Publish
+publish/
+
+# Logs
+*.log

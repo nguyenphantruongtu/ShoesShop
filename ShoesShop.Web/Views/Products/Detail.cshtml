@@ -1,0 +1,458 @@
+@using System.Text.Json
+@{
+    ViewData["Title"] = "Chi tiết sản phẩm — STRIDEX";
+    JsonElement p = ViewBag.Product;
+
+    // Fix: JsonElement is a struct, cannot be nullable — use default instead
+    object? reviewsRaw = ViewBag.Reviews;
+    JsonElement reviewsEl = reviewsRaw is JsonElement rj ? rj : default;
+
+    var pName      = p.TryGetProperty("productName",    out var _n)  ? _n.GetString() ?? ""  : "";
+    var pDesc      = p.TryGetProperty("description",    out var _d)  ? _d.GetString()         : null;
+    var pShortDesc = p.TryGetProperty("shortDescription",out var _sd)? _sd.GetString()        : null;
+    var pPrice     = p.TryGetProperty("basePrice",      out var _bp) ? _bp.GetDecimal()       : 0m;
+    var pSalePrice = p.TryGetProperty("salePrice",      out var _sp) && _sp.ValueKind != JsonValueKind.Null
+                     ? (decimal?)_sp.GetDecimal() : null;
+    var pBrand     = p.TryGetProperty("brandName",     out var _bn) && _bn.ValueKind != JsonValueKind.Null ? _bn.GetString()    : null;
+    var pCat       = p.TryGetProperty("categoryName",  out var _cn) && _cn.ValueKind != JsonValueKind.Null ? _cn.GetString()    : null;
+    var pGender    = p.TryGetProperty("gender",        out var _gn) && _gn.ValueKind != JsonValueKind.Null ? _gn.GetString()    : null;
+    var pMaterial  = p.TryGetProperty("material",      out var _mn) && _mn.ValueKind != JsonValueKind.Null ? _mn.GetString()    : null;
+    var pRating    = p.TryGetProperty("averageRating", out var _ar) && _ar.ValueKind != JsonValueKind.Null ? (double?)_ar.GetDouble() : null;
+    var pRevCount  = p.TryGetProperty("reviewCount",   out var _rc) ? _rc.GetInt32() : 0;
+    var pProductId = p.TryGetProperty("productId",     out var _pid)? _pid.GetInt32() : 0;
+
+    var images   = p.TryGetProperty("imageUrls", out var _imgs) && _imgs.ValueKind == JsonValueKind.Array ? _imgs : default;
+    var colors   = p.TryGetProperty("colors",    out var _cls)  && _cls.ValueKind  == JsonValueKind.Array ? _cls  : default;
+    var sizes    = p.TryGetProperty("sizes",     out var _szs)  && _szs.ValueKind  == JsonValueKind.Array ? _szs  : default;
+    var variants = p.TryGetProperty("variants",  out var _vr)   && _vr.ValueKind   == JsonValueKind.Array ? _vr   : default;
+
+    var hasSale      = pSalePrice.HasValue && pSalePrice.Value < pPrice;
+    var salePercent  = hasSale ? (int)Math.Round((1 - pSalePrice!.Value / pPrice) * 100) : 0;
+    var displayPrice = hasSale ? pSalePrice!.Value : pPrice;
+
+    var firstImgUrl = images.ValueKind == JsonValueKind.Array
+        ? (images.EnumerateArray().FirstOrDefault().ValueKind != JsonValueKind.Undefined
+            ? images.EnumerateArray().First().GetString() : null)
+        : null;
+    firstImgUrl ??= "https://placehold.co/600x600/f3f3f3/888?text=No+Image";
+
+    // Pre-serialize variants for JS
+    var variantsJson = "[]";
+    if (variants.ValueKind == JsonValueKind.Array)
+    {
+        var sb = new System.Text.StringBuilder("[");
+        bool first = true;
+        foreach (var v in variants.EnumerateArray())
+        {
+            if (!first) sb.Append(',');
+            first = false;
+            var vid   = v.TryGetProperty("variantId",     out var vi)  ? vi.GetInt32()   : 0;
+            var sid   = v.TryGetProperty("sizeId",        out var si2) ? si2.GetInt32()  : 0;
+            var cid   = v.TryGetProperty("colorId",       out var ci2) ? ci2.GetInt32()  : 0;
+            var stock = v.TryGetProperty("stockQuantity", out var sq)  ? sq.GetInt32()   : 0;
+            var actv  = v.TryGetProperty("isActive",      out var ia)  ? ia.GetBoolean() : true;
+            sb.Append($"{{\"variantId\":{vid},\"sizeId\":{sid},\"colorId\":{cid},\"stock\":{stock},\"isActive\":{actv.ToString().ToLower()}}}");
+        }
+        sb.Append(']');
+        variantsJson = sb.ToString();
+    }
+
+    ViewData["Title"] = pName + " — STRIDEX";
+
+    // Reviews list
+    var reviews = reviewsEl.ValueKind == JsonValueKind.Array
+        ? reviewsEl.EnumerateArray().ToList()
+        : (reviewsEl.ValueKind != JsonValueKind.Undefined && reviewsEl.TryGetProperty("reviews", out var rv2) && rv2.ValueKind == JsonValueKind.Array
+            ? rv2.EnumerateArray().ToList()
+            : new List<JsonElement>());
+}
+
+<div class="container-xxl px-4 py-4">
+
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb breadcrumb-clean">
+            <li class="breadcrumb-item"><a asp-controller="Home" asp-action="Index">Trang chủ</a></li>
+            <li class="breadcrumb-item"><a asp-controller="Products" asp-action="Index">Sản phẩm</a></li>
+            <li class="breadcrumb-item active">@pName</li>
+        </ol>
+    </nav>
+
+    <!-- ═══ MAIN PRODUCT SECTION ═══ -->
+    <div class="row g-5 mb-5">
+
+        <!-- LEFT — Gallery -->
+        <div class="col-lg-6">
+            <div class="detail-gallery-main mb-3">
+                <img id="mainImage" src="@firstImgUrl" alt="@pName">
+            </div>
+            @if (images.ValueKind == JsonValueKind.Array && images.GetArrayLength() > 1)
+            {
+                <div class="d-flex gap-2 flex-wrap">
+                    @foreach (var imgUrl in images.EnumerateArray().Select(i => i.GetString()))
+                    {
+                        <img src="@imgUrl"
+                             class="detail-thumb @(imgUrl == firstImgUrl ? "active" : "")"
+                             alt="@pName thumbnail"
+                             onclick="switchImage(this, '@imgUrl')">
+                    }
+                </div>
+            }
+        </div>
+
+        <!-- RIGHT — Info -->
+        <div class="col-lg-6">
+
+            <!-- Brand / Category tags -->
+            <div class="d-flex gap-2 mb-3">
+                @if (!string.IsNullOrEmpty(pBrand))
+                {
+                    <span style="font-size:0.7rem;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:#888">@pBrand</span>
+                }
+                @if (!string.IsNullOrEmpty(pCat))
+                {
+                    <span style="color:#ccc">|</span>
+                    <span style="font-size:0.7rem;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:#888">@pCat</span>
+                }
+            </div>
+
+            <!-- Name -->
+            <h1 style="font-size:clamp(1.6rem,3vw,2.4rem);font-weight:900;text-transform:uppercase;letter-spacing:-0.01em;line-height:1.1;margin-bottom:16px;">@pName</h1>
+
+            <!-- Rating -->
+            <div class="d-flex align-items-center gap-2 mb-4">
+                @if (pRating.HasValue)
+                {
+                    <div class="d-flex gap-1">
+                        @for (int s = 1; s <= 5; s++)
+                        {
+                            if (pRating >= s)            { <i class="bi bi-star-fill" style="color:#f5a623;font-size:0.8rem"></i> }
+                            else if (pRating >= s - 0.5) { <i class="bi bi-star-half" style="color:#f5a623;font-size:0.8rem"></i> }
+                            else                         { <i class="bi bi-star"       style="color:#ddd;font-size:0.8rem"></i> }
+                        }
+                    </div>
+                    <span style="font-size:0.8rem;color:#888">@pRating.Value.ToString("0.0") (@pRevCount đánh giá)</span>
+                }
+                else
+                {
+                    <span style="font-size:0.8rem;color:#888">Chưa có đánh giá</span>
+                }
+            </div>
+
+            <!-- Price -->
+            <div class="d-flex align-items-baseline gap-3 mb-5 pb-4" style="border-bottom:1px solid #eee">
+                <span style="font-size:2rem;font-weight:900;color:#000;">@displayPrice.ToString("N0")₫</span>
+                @if (hasSale)
+                {
+                    <span style="font-size:1.1rem;color:#bbb;text-decoration:line-through;font-weight:400;">@pPrice.ToString("N0")₫</span>
+                    <span style="background:#e63946;color:#fff;font-size:0.72rem;font-weight:700;padding:3px 9px;letter-spacing:0.06em;text-transform:uppercase;">-@salePercent%</span>
+                }
+            </div>
+
+            <!-- Color selector -->
+            @if (colors.ValueKind == JsonValueKind.Array)
+            {
+                <div class="mb-4">
+                    <div class="d-flex align-items-center justify-content-between mb-2">
+                        <span style="font-size:0.75rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;">Màu sắc</span>
+                        <span id="colorLabel" style="font-size:0.8rem;color:#888"></span>
+                    </div>
+                    <div class="d-flex gap-2 flex-wrap" id="colorButtons">
+                        @foreach (var c in colors.EnumerateArray())
+                        {
+                            var cid     = c.GetProperty("colorId").GetInt32();
+                            var cname   = c.GetProperty("colorName").GetString();
+                            var hexCode = c.TryGetProperty("hexCode", out var hx) && hx.ValueKind != JsonValueKind.Null
+                                          ? hx.GetString() : "#ccc";
+                            <button class="color-swatch" title="@cname"
+                                    data-color-id="@cid" data-color-name="@cname"
+                                    style="background:@hexCode"
+                                    onclick="selectColor(this)"></button>
+                        }
+                    </div>
+                </div>
+            }
+
+            <!-- Size selector -->
+            @if (sizes.ValueKind == JsonValueKind.Array)
+            {
+                <div class="mb-5">
+                    <div class="d-flex align-items-center justify-content-between mb-2">
+                        <span style="font-size:0.75rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;">Size</span>
+                        <a href="#size-guide" style="font-size:0.75rem;color:#888;text-decoration:underline">Hướng dẫn chọn size</a>
+                    </div>
+                    <div class="d-flex gap-2 flex-wrap" id="sizeButtons">
+                        @foreach (var s in sizes.EnumerateArray())
+                        {
+                            var sid   = s.GetProperty("sizeId").GetInt32();
+                            var sname = s.GetProperty("sizeName").GetString();
+                            <button class="size-btn" data-size-id="@sid" data-size-name="@sname"
+                                    onclick="selectSize(this)">@sname</button>
+                        }
+                    </div>
+                    <div id="stockInfo" class="mt-2" style="font-size:0.82rem;min-height:20px"></div>
+                </div>
+            }
+
+            <!-- Add to cart -->
+            <button class="add-to-cart-btn mb-3" id="btnAddToCart" onclick="addToCart()">
+                <i class="bi bi-bag-plus me-2"></i>Thêm vào giỏ hàng
+            </button>
+
+            <!-- Short desc -->
+            @if (!string.IsNullOrEmpty(pShortDesc))
+            {
+                <p style="font-size:0.85rem;color:#666;line-height:1.7;margin-top:12px">@pShortDesc</p>
+            }
+
+            <!-- Meta info -->
+            <div class="d-flex flex-wrap gap-3 mt-4" style="font-size:0.78rem;color:#888">
+                @if (!string.IsNullOrEmpty(pBrand))    { <span><i class="bi bi-building me-1"></i>Thương hiệu: <strong style="color:#000">@pBrand</strong></span> }
+                @if (!string.IsNullOrEmpty(pMaterial)) { <span><i class="bi bi-layers me-1"></i>Chất liệu: <strong style="color:#000">@pMaterial</strong></span> }
+                @if (!string.IsNullOrEmpty(pGender))   { <span><i class="bi bi-person me-1"></i>Giới tính: <strong style="color:#000">@(pGender=="Men"?"Nam":pGender=="Women"?"Nữ":pGender)</strong></span> }
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══ DESCRIPTION ═══ -->
+    @if (!string.IsNullOrEmpty(pDesc))
+    {
+        <div class="py-5" style="border-top:1px solid #eee">
+            <h3 style="font-size:0.9rem;font-weight:800;text-transform:uppercase;letter-spacing:0.12em;margin-bottom:20px">Mô tả sản phẩm</h3>
+            <div style="font-size:0.92rem;color:#444;line-height:1.8;max-width:720px">@Html.Raw(pDesc)</div>
+        </div>
+    }
+
+    <!-- ═══ REVIEWS ═══ -->
+    <div class="py-5" style="border-top:1px solid #eee" id="size-guide">
+        <div class="d-flex align-items-center justify-content-between mb-5">
+            <h3 style="font-size:0.9rem;font-weight:800;text-transform:uppercase;letter-spacing:0.12em;margin:0">
+                Đánh giá khách hàng (@pRevCount)
+            </h3>
+            @if (User.IsInRole("Customer"))
+            {
+                <button class="btn-black" style="padding:9px 20px;font-size:0.75rem"
+                        onclick="document.getElementById('reviewForm').scrollIntoView({behavior:'smooth'})">
+                    Viết đánh giá
+                </button>
+            }
+        </div>
+
+        @if (!reviews.Any())
+        {
+            <div class="text-center py-5" style="color:#bbb">
+                <i class="bi bi-chat-square" style="font-size:2.5rem"></i>
+                <p style="margin-top:14px;font-size:0.85rem;font-weight:600;text-transform:uppercase;letter-spacing:0.08em">Chưa có đánh giá nào</p>
+            </div>
+        }
+        else
+        {
+            var avg = reviews.Average(r => r.GetProperty("rating").GetInt32());
+            <div class="row g-5 mb-5">
+                <div class="col-md-3 text-center">
+                    <div style="font-size:4rem;font-weight:900;line-height:1">@avg.ToString("0.0")</div>
+                    <div class="d-flex gap-1 justify-content-center my-2">
+                        @for (int s = 1; s <= 5; s++)
+                        {
+                            if (avg >= s)           { <i class="bi bi-star-fill" style="color:#f5a623"></i> }
+                            else if (avg >= s - 0.5){ <i class="bi bi-star-half" style="color:#f5a623"></i> }
+                            else                    { <i class="bi bi-star"       style="color:#ddd"></i> }
+                        }
+                    </div>
+                    <div style="font-size:0.78rem;color:#888">@reviews.Count đánh giá</div>
+                </div>
+                <div class="col-md-9">
+                    @foreach (var star in new[] { 5,4,3,2,1 })
+                    {
+                        var cnt = reviews.Count(r => r.GetProperty("rating").GetInt32() == star);
+                        var pct = reviews.Count > 0 ? (int)Math.Round((double)cnt / reviews.Count * 100) : 0;
+                        <div class="d-flex align-items-center gap-3 mb-2">
+                            <span style="font-size:0.78rem;font-weight:700;width:8px">@star</span>
+                            <i class="bi bi-star-fill" style="color:#f5a623;font-size:0.72rem"></i>
+                            <div class="flex-grow-1" style="background:#f3f3f3;height:6px;border-radius:3px;overflow:hidden">
+                                <div style="background:#f5a623;height:100%;width:@pct%;transition:width 0.4s ease"></div>
+                            </div>
+                            <span style="font-size:0.78rem;color:#888;width:18px">@cnt</span>
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <div class="row row-cols-1 row-cols-md-2 g-4">
+                @foreach (var rv in reviews)
+                {
+                    var rName = rv.TryGetProperty("reviewerName", out var rn) && rn.ValueKind != JsonValueKind.Null ? rn.GetString() : "Khách hàng";
+                    var rStar = rv.GetProperty("rating").GetInt32();
+                    var rCmt  = rv.TryGetProperty("comment", out var rcmt) && rcmt.ValueKind != JsonValueKind.Null ? rcmt.GetString() : null;
+                    var rDate = rv.GetProperty("createdAt").GetDateTime();
+                    <div class="col">
+                        <div style="border:1px solid #eee;padding:20px">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <div>
+                                    <div style="font-weight:700;font-size:0.88rem">@rName</div>
+                                    <div class="d-flex gap-1 mt-1">
+                                        @for (int s = 1; s <= 5; s++)
+                                        {
+                                            if (rStar >= s) { <i class="bi bi-star-fill" style="color:#f5a623;font-size:0.72rem"></i> }
+                                            else            { <i class="bi bi-star"       style="color:#ddd;font-size:0.72rem"></i> }
+                                        }
+                                    </div>
+                                </div>
+                                <span style="font-size:0.75rem;color:#bbb">@rDate.ToString("dd/MM/yyyy")</span>
+                            </div>
+                            @if (!string.IsNullOrEmpty(rCmt))
+                            {
+                                <p style="font-size:0.85rem;color:#555;margin:0;line-height:1.6">@rCmt</p>
+                            }
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+
+        <!-- Review form -->
+        @if (User.IsInRole("Customer"))
+        {
+            <div id="reviewForm" class="mt-5 pt-5" style="border-top:1px solid #eee">
+                <h4 style="font-size:0.85rem;font-weight:800;text-transform:uppercase;letter-spacing:0.12em;margin-bottom:24px">Viết đánh giá của bạn</h4>
+                <form asp-controller="Reviews" asp-action="Create" method="post">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="ProductId" value="@pProductId" />
+                    <div class="mb-3">
+                        <label class="form-label-clean">Số sao</label>
+                        <div class="d-flex gap-2">
+                            @for (int s = 1; s <= 5; s++)
+                            {
+                                <label style="cursor:pointer">
+                                    <input type="radio" name="Rating" value="@s" required style="display:none">
+                                    <i class="bi bi-star review-star" data-val="@s"
+                                       style="font-size:1.5rem;color:#ddd;cursor:pointer;transition:color 0.15s"></i>
+                                </label>
+                            }
+                        </div>
+                    </div>
+                    <div class="mb-4">
+                        <label class="form-label-clean">Nhận xét</label>
+                        <textarea name="Comment" rows="4" class="form-control-clean"
+                                  placeholder="Chia sẻ trải nghiệm của bạn về sản phẩm..."></textarea>
+                    </div>
+                    <button type="submit" class="btn-black">Gửi đánh giá</button>
+                </form>
+            </div>
+        }
+    </div>
+</div>
+
+@section Scripts {
+<script>
+const VARIANTS     = @Html.Raw(variantsJson);
+const PRODUCT_ID   = @pProductId;
+const PRODUCT_NAME = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(pName));
+const SALE_PRICE   = @((hasSale ? pSalePrice!.Value : pPrice).ToString(System.Globalization.CultureInfo.InvariantCulture));
+const PRIMARY_IMG  = "@Html.Raw(firstImgUrl)";
+
+let selSizeId=null, selSizeName=null, selColorId=null, selColorName=null;
+
+function switchImage(el, src) {
+    document.getElementById('mainImage').src = src;
+    document.querySelectorAll('.detail-thumb').forEach(t => t.classList.remove('active'));
+    el.classList.add('active');
+}
+
+function selectColor(btn) {
+    document.querySelectorAll('.color-swatch').forEach(b => b.classList.remove('selected'));
+    btn.classList.add('selected');
+    selColorId   = parseInt(btn.dataset.colorId);
+    selColorName = btn.dataset.colorName;
+    document.getElementById('colorLabel').textContent = selColorName;
+    updateStock();
+}
+
+function selectSize(btn) {
+    document.querySelectorAll('.size-btn').forEach(b => b.classList.remove('selected'));
+    btn.classList.add('selected');
+    selSizeId   = parseInt(btn.dataset.sizeId);
+    selSizeName = btn.dataset.sizeName;
+    updateStock();
+}
+
+function updateStock() {
+    const si = document.getElementById('stockInfo');
+    if (!selSizeId || !selColorId) { si.innerHTML = ''; return; }
+    const v = VARIANTS.find(x => x.sizeId===selSizeId && x.colorId===selColorId);
+    if (!v || !v.isActive)
+        si.innerHTML = '<span style="color:#e63946"><i class="bi bi-x-circle me-1"></i>Không có biến thể này</span>';
+    else if (v.stock === 0)
+        si.innerHTML = '<span style="color:#e63946"><i class="bi bi-x-circle me-1"></i>Hết hàng</span>';
+    else
+        si.innerHTML = `<span style="color:#2d6a4f"><i class="bi bi-check-circle me-1"></i>Còn <strong>${v.stock}</strong> sản phẩm</span>`;
+}
+
+function addToCart() {
+    if (!selColorId) { showToast('Vui lòng chọn màu sắc.', 'error'); return; }
+    if (!selSizeId)  { showToast('Vui lòng chọn size.', 'error'); return; }
+    const v = VARIANTS.find(x => x.sizeId===selSizeId && x.colorId===selColorId);
+    if (!v || !v.isActive) { showToast('Không có biến thể này.', 'error'); return; }
+    if (v.stock===0) { showToast('Sản phẩm đã hết hàng.', 'error'); return; }
+
+    let cart = JSON.parse(localStorage.getItem('shoes_shop_cart')) || [];
+    const existing = cart.find(i => i.variantId===v.variantId);
+    if (existing) existing.quantity += 1;
+    else cart.push({
+        productId: PRODUCT_ID, variantId: v.variantId,
+        productName: PRODUCT_NAME, colorId: selColorId, colorName: selColorName,
+        sizeId: selSizeId, sizeName: selSizeName,
+        salePrice: SALE_PRICE, primaryImageUrl: PRIMARY_IMG, quantity: 1
+    });
+    localStorage.setItem('shoes_shop_cart', JSON.stringify(cart));
+
+    // Update navbar badge
+    const total = cart.reduce((s,i) => s+i.quantity, 0);
+    const badge = document.getElementById('cart-count');
+    if (badge) { badge.textContent=total; badge.style.display='flex'; }
+
+    showToast(`Đã thêm vào giỏ hàng — ${PRODUCT_NAME}`, 'success');
+}
+
+function showToast(msg, type) {
+    const t = document.createElement('div');
+    t.className = `alert-bar ${type==='success'?'success':'danger'} d-flex align-items-center gap-2`;
+    t.style.cssText = 'position:fixed;bottom:24px;right:24px;z-index:9999;max-width:340px;animation:slideIn 0.25s ease';
+    t.innerHTML = `<i class="bi bi-${type==='success'?'check-circle-fill':'exclamation-circle-fill'}"></i><span>${msg}</span>`;
+    document.body.appendChild(t);
+    setTimeout(() => t.remove(), 3000);
+}
+
+// Star rating hover
+document.querySelectorAll('.review-star').forEach(star => {
+    star.addEventListener('mouseenter', function() {
+        const val = parseInt(this.dataset.val);
+        document.querySelectorAll('.review-star').forEach((s,i) => {
+            s.style.color = i < val ? '#f5a623' : '#ddd';
+            s.className = `bi bi-star${i < val ? '-fill' : ''} review-star`;
+        });
+    });
+    star.addEventListener('click', function() {
+        const val = parseInt(this.dataset.val);
+        this.closest('label').querySelector('input').checked = true;
+        document.querySelectorAll('.review-star').forEach((s,i) => {
+            s.style.color = i < val ? '#f5a623' : '#ddd';
+            s.className = `bi bi-star${i < val ? '-fill' : ''} review-star`;
+        });
+    });
+});
+document.querySelectorAll('.review-star').forEach(s => {
+    s.closest('div')?.addEventListener('mouseleave', () => {
+        const checked = document.querySelector('input[name="Rating"]:checked');
+        const val = checked ? parseInt(checked.value) : 0;
+        document.querySelectorAll('.review-star').forEach((star,i) => {
+            star.style.color = i < val ? '#f5a623' : '#ddd';
+            star.className = `bi bi-star${i < val ? '-fill' : ''} review-star`;
+        });
+    });
+});
+</script>
+<style>
+@@keyframes slideIn { from { opacity:0; transform:translateY(12px); } to { opacity:1; transform:translateY(0); } }
+</style>
+}

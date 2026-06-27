@@ -1,0 +1,306 @@
+@using System.Text.Json
+@model JsonElement
+@{
+    ViewData["Title"] = "Chi tiết đơn hàng — STRIDEX";
+    var orderId  = Model.GetProperty("orderId").GetInt32();
+    var code     = Model.GetProperty("orderCode").GetString();
+    var status   = Model.GetProperty("orderStatus").GetString() ?? "";
+    var pStatus  = Model.GetProperty("paymentStatus").GetString() ?? "";
+    var items    = Model.GetProperty("items");
+    var history  = Model.TryGetProperty("statusHistory", out var h) ? h : default;
+    var shipment = Model.TryGetProperty("shipment", out var sh) && sh.ValueKind != JsonValueKind.Null ? sh : (JsonElement?)null;
+
+    var statusVi = new Dictionary<string,string>{
+        ["Pending"]="Chờ xác nhận",["Confirmed"]="Đã xác nhận",["Preparing"]="Đang chuẩn bị",
+        ["Shipping"]="Đang giao",["Delivered"]="Đã giao",["Cancelled"]="Đã hủy"
+    };
+    bool canCancel = status is "Pending" or "Confirmed";
+    bool canReview = status == "Delivered";
+}
+
+<div class="container-xxl px-4 py-5">
+
+    <!-- Back + header -->
+    <div class="d-flex align-items-center justify-content-between mb-5 flex-wrap gap-3">
+        <div>
+            <a asp-action="Index"
+               style="font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;
+                      color:#888;text-decoration:none;display:inline-flex;align-items:center;gap:6px;margin-bottom:12px">
+                <i class="bi bi-arrow-left"></i> Đơn hàng của tôi
+            </a>
+            <h1 style="font-size:1.5rem;font-weight:900;text-transform:uppercase;letter-spacing:0.02em;margin-bottom:8px">@code</h1>
+            <span class="status-badge status-@status">@(statusVi.GetValueOrDefault(status, status))</span>
+        </div>
+        @if (canCancel)
+        {
+            <button class="btn-white" style="border-color:#e63946;color:#e63946"
+                    data-bs-toggle="modal" data-bs-target="#cancelModal">
+                <i class="bi bi-x-circle me-1"></i>Hủy đơn
+            </button>
+        }
+    </div>
+
+    <div class="row g-5">
+
+        <!-- LEFT — Items + history -->
+        <div class="col-lg-8">
+
+            <!-- Items -->
+            <div style="border:1px solid #eee;margin-bottom:24px">
+                <div style="padding:20px 24px;border-bottom:1px solid #eee;font-size:0.75rem;font-weight:800;text-transform:uppercase;letter-spacing:0.12em">
+                    Sản phẩm đặt mua
+                </div>
+                @if (items.ValueKind == JsonValueKind.Array)
+                {
+                    foreach (var it in items.EnumerateArray())
+                    {
+                        var img    = it.TryGetProperty("primaryImageUrl", out var img2) && img2.ValueKind != JsonValueKind.Null ? img2.GetString() : null;
+                        var pname  = it.GetProperty("productName").GetString();
+                        var size   = it.GetProperty("sizeValue").GetString();
+                        var color  = it.GetProperty("colorName").GetString();
+                        var qty    = it.GetProperty("quantity").GetInt32();
+                        var price  = it.GetProperty("unitPrice").GetDecimal();
+                        var line   = it.GetProperty("lineTotal").GetDecimal();
+                        var reviewed = it.TryGetProperty("isReviewed", out var rv) && rv.GetBoolean();
+                        var oiid   = it.GetProperty("orderItemId").GetInt32();
+                        <div style="display:flex;gap:16px;align-items:flex-start;padding:16px 24px;border-bottom:1px solid #f3f3f3">
+                            @if (!string.IsNullOrEmpty(img))
+                            {
+                                <img src="@img" style="width:64px;height:64px;object-fit:cover;flex-shrink:0"
+                                     onerror="this.src='https://placehold.co/64x64/f3f3f3/888?text=?'">
+                            }
+                            else
+                            {
+                                <div style="width:64px;height:64px;background:#f3f3f3;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+                                    <i class="bi bi-image" style="color:#bbb"></i>
+                                </div>
+                            }
+                            <div style="flex:1;min-width:0">
+                                <div style="font-weight:700;font-size:0.88rem;text-transform:uppercase">@pname</div>
+                                <div style="font-size:0.75rem;color:#888;margin-top:3px">Size @size &nbsp;·&nbsp; @color</div>
+                                <div style="font-size:0.78rem;color:#666;margin-top:2px">@price.ToString("N0")₫ × @qty</div>
+                            </div>
+                            <div style="text-align:end;flex-shrink:0">
+                                <div style="font-weight:900;font-size:0.95rem">@line.ToString("N0")₫</div>
+                                @if (canReview && !reviewed)
+                                {
+                                    <button style="margin-top:8px;font-size:0.72rem;font-weight:700;text-transform:uppercase;
+                                                   letter-spacing:0.08em;border:1px solid #f5a623;background:none;color:#f5a623;
+                                                   padding:4px 10px;cursor:pointer"
+                                            data-bs-toggle="modal" data-bs-target="#reviewModal"
+                                            onclick="openReviewModal(@oiid, '@System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode(pname ?? "")')">
+                                        <i class="bi bi-star me-1"></i>Đánh giá
+                                    </button>
+                                }
+                                @if (canReview && reviewed)
+                                {
+                                    <span style="font-size:0.72rem;font-weight:700;color:#2d6a4f;display:block;margin-top:8px">
+                                        <i class="bi bi-check-circle me-1"></i>Đã đánh giá
+                                    </span>
+                                }
+                            </div>
+                        </div>
+                    }
+
+                    <!-- Totals -->
+                    <div style="padding:16px 24px;text-align:end">
+                        <div style="font-size:0.8rem;color:#888;margin-bottom:4px">
+                            Tạm tính: <span style="font-weight:600;color:#555">@Model.GetProperty("subTotal").GetDecimal().ToString("N0")₫</span>
+                        </div>
+                        <div style="font-size:0.8rem;color:#888;margin-bottom:4px">
+                            Phí vận chuyển: <span style="font-weight:600;color:#555">@Model.GetProperty("shippingFee").GetDecimal().ToString("N0")₫</span>
+                        </div>
+                        @if (Model.GetProperty("discountAmount").GetDecimal() > 0)
+                        {
+                            <div style="font-size:0.8rem;color:#2d6a4f;margin-bottom:4px">
+                                Giảm giá: <span style="font-weight:600">-@Model.GetProperty("discountAmount").GetDecimal().ToString("N0")₫</span>
+                            </div>
+                        }
+                        <div style="font-size:1.1rem;font-weight:900;margin-top:8px;padding-top:8px;border-top:1px solid #eee">
+                            Tổng cộng: @Model.GetProperty("totalAmount").GetDecimal().ToString("N0")₫
+                        </div>
+                    </div>
+                }
+            </div>
+
+            <!-- Status history timeline -->
+            @if (history.ValueKind == JsonValueKind.Array && history.GetArrayLength() > 0)
+            {
+                <div style="border:1px solid #eee">
+                    <div style="padding:20px 24px;border-bottom:1px solid #eee;font-size:0.75rem;font-weight:800;text-transform:uppercase;letter-spacing:0.12em">
+                        Lịch sử trạng thái
+                    </div>
+                    <div style="padding:20px 24px">
+                        @foreach (var hh in history.EnumerateArray())
+                        {
+                            var hStatus = hh.GetProperty("status").GetString() ?? "";
+                            var hNote   = hh.TryGetProperty("note", out var hn) && hn.ValueKind != JsonValueKind.Null ? hn.GetString() : null;
+                            var hAt     = hh.GetProperty("changedAt").GetDateTime();
+                            <div style="display:flex;gap:16px;align-items:flex-start;margin-bottom:20px">
+                                <div style="width:28px;height:28px;background:#000;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px">
+                                    <i class="bi bi-check" style="color:#fff;font-size:0.8rem"></i>
+                                </div>
+                                <div>
+                                    <div style="font-weight:700;font-size:0.85rem">@(statusVi.GetValueOrDefault(hStatus, hStatus))</div>
+                                    @if (!string.IsNullOrEmpty(hNote))
+                                    {
+                                        <div style="font-size:0.78rem;color:#666;margin-top:2px">@hNote</div>
+                                    }
+                                    <div style="font-size:0.75rem;color:#bbb;margin-top:2px">@hAt.ToString("HH:mm dd/MM/yyyy")</div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+            }
+        </div>
+
+        <!-- RIGHT — Shipping + payment info -->
+        <div class="col-lg-4">
+
+            <!-- Shipping address -->
+            <div style="border:1px solid #eee;padding:20px 24px;margin-bottom:16px">
+                <div style="font-size:0.75rem;font-weight:800;text-transform:uppercase;letter-spacing:0.12em;margin-bottom:16px">
+                    Địa chỉ giao hàng
+                </div>
+                <div style="font-size:0.82rem;line-height:1.8">
+                    <strong>@Model.GetProperty("recipientName").GetString()</strong><br>
+                    @Model.GetProperty("recipientPhone").GetString()<br>
+                    <span style="color:#666">
+                        @Model.GetProperty("shippingAddress").GetString(),
+                        @Model.GetProperty("ward").GetString(),
+                        @Model.GetProperty("district").GetString(),
+                        @Model.GetProperty("province").GetString()
+                    </span>
+                </div>
+            </div>
+
+            <!-- Payment -->
+            <div style="border:1px solid #eee;padding:20px 24px;margin-bottom:16px">
+                <div style="font-size:0.75rem;font-weight:800;text-transform:uppercase;letter-spacing:0.12em;margin-bottom:16px">
+                    Thanh toán
+                </div>
+                <div style="font-size:0.82rem;line-height:1.9">
+                    <span style="color:#666">Phương thức: </span>
+                    <strong>@(Model.TryGetProperty("paymentMethod", out var pm) ? pm.GetString() : "COD")</strong><br>
+                    <span style="color:#666">Trạng thái: </span>
+                    <span class="status-badge status-@pStatus" style="font-size:0.72rem">@pStatus</span>
+                </div>
+            </div>
+
+            <!-- Carrier -->
+            @if (shipment.HasValue)
+            {
+                <div style="border:1px solid #eee;padding:20px 24px;margin-bottom:16px">
+                    <div style="font-size:0.75rem;font-weight:800;text-transform:uppercase;letter-spacing:0.12em;margin-bottom:16px">
+                        Vận chuyển
+                    </div>
+                    <div style="font-size:0.82rem;line-height:1.9">
+                        <span style="color:#666">Đơn vị: </span>
+                        <strong>@shipment.Value.GetProperty("carrierName").GetString()</strong><br>
+                        @{var tn = shipment.Value.TryGetProperty("trackingNumber", out var tnn) && tnn.ValueKind != JsonValueKind.Null ? tnn.GetString() : null;}
+                        @if (!string.IsNullOrEmpty(tn))
+                        {
+                            <span style="color:#666">Mã vận đơn: </span><code style="font-size:0.82rem">@tn</code><br>
+                        }
+                        @{var eta = shipment.Value.TryGetProperty("estimatedDeliveryDate", out var etad) && etad.ValueKind != JsonValueKind.Null ? (DateTime?)etad.GetDateTime() : null;}
+                        @if (eta.HasValue)
+                        {
+                            <span style="color:#666">Dự kiến giao: </span><strong>@eta.Value.ToString("dd/MM/yyyy")</strong>
+                        }
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+<!-- Cancel Modal -->
+@if (canCancel)
+{
+    <div class="modal fade" id="cancelModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered modal-sm">
+            <div class="modal-content border-0" style="border-radius:0">
+                <div class="modal-header border-0 pb-0">
+                    <h5 style="font-size:0.85rem;font-weight:800;text-transform:uppercase;letter-spacing:0.1em">Hủy đơn hàng</h5>
+                    <button class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <form asp-action="Cancel" asp-controller="Orders" asp-route-id="@orderId" method="post">
+                    @Html.AntiForgeryToken()
+                    <div class="modal-body p-4">
+                        <label class="form-label-clean">Lý do hủy <span style="color:#e63946">*</span></label>
+                        <textarea name="cancelReason" class="form-control-clean" rows="3" required maxlength="500"
+                                  placeholder="Nhập lý do hủy..."></textarea>
+                    </div>
+                    <div class="modal-footer border-0 justify-content-end gap-2">
+                        <button type="button" class="btn-white" data-bs-dismiss="modal">Đóng</button>
+                        <button type="submit" class="btn-black" style="background:#e63946;border-color:#e63946">Xác nhận hủy</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+}
+
+<!-- Review Modal -->
+@if (canReview)
+{
+    <div class="modal fade" id="reviewModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0" style="border-radius:0">
+                <div class="modal-header border-0 pb-0">
+                    <h5 style="font-size:0.85rem;font-weight:800;text-transform:uppercase;letter-spacing:0.1em">Đánh giá sản phẩm</h5>
+                    <button class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <form asp-controller="Reviews" asp-action="Create" method="post">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="orderItemId" id="rvOrderItemId">
+                    <input type="hidden" name="orderId" value="@orderId">
+                    <div class="modal-body p-4">
+                        <div id="rvProductName" style="font-weight:700;font-size:0.88rem;text-transform:uppercase;margin-bottom:20px;color:#000"></div>
+                        <div class="mb-4">
+                            <label class="form-label-clean">Đánh giá <span style="color:#e63946">*</span></label>
+                            <div class="d-flex gap-2 mt-2" id="starRating">
+                                @for (int s = 1; s <= 5; s++)
+                                {
+                                    <i class="bi bi-star fs-4 star-btn" data-star="@s"
+                                       style="cursor:pointer;color:#ddd;transition:color 0.15s"
+                                       onclick="setRating(@s)"></i>
+                                }
+                            </div>
+                            <input type="hidden" name="rating" id="rvRating" required>
+                        </div>
+                        <div>
+                            <label class="form-label-clean">Nhận xét</label>
+                            <textarea name="comment" class="form-control-clean" rows="3" maxlength="1000"
+                                      placeholder="Chia sẻ cảm nhận của bạn..."></textarea>
+                        </div>
+                    </div>
+                    <div class="modal-footer border-0 justify-content-end gap-2">
+                        <button type="button" class="btn-white" data-bs-dismiss="modal">Hủy</button>
+                        <button type="submit" class="btn-black">Gửi đánh giá</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+}
+
+@section Scripts {
+<script>
+function openReviewModal(itemId, productName) {
+    document.getElementById('rvOrderItemId').value = itemId;
+    document.getElementById('rvProductName').textContent = productName;
+    document.getElementById('rvRating').value = '';
+    document.querySelectorAll('.star-btn').forEach(s => { s.style.color = '#ddd'; s.className = 'bi bi-star fs-4 star-btn'; });
+}
+function setRating(val) {
+    document.getElementById('rvRating').value = val;
+    document.querySelectorAll('.star-btn').forEach(s => {
+        const sv = parseInt(s.dataset.star);
+        s.style.color = sv <= val ? '#f5a623' : '#ddd';
+        s.className   = `bi bi-star${sv <= val ? '-fill' : ''} fs-4 star-btn`;
+    });
+}
+</script>
+}

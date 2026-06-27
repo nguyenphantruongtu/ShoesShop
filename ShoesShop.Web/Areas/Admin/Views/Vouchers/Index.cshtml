@@ -1,0 +1,158 @@
+@using System.Text.Json
+@model JsonElement?
+@{ ViewData["Title"] = "Voucher"; }
+
+<div class="page-header d-flex justify-content-between align-items-center">
+    <div><h3><i class="bi bi-ticket-perforated me-2 text-primary"></i>Quản lý Voucher</h3><p>Tạo và quản lý mã giảm giá</p></div>
+    <button class="btn btn-primary rounded-3 px-4" data-bs-toggle="modal" data-bs-target="#voucherModal" onclick="openModal(0)">
+        <i class="bi bi-plus-lg me-1"></i>Tạo voucher
+    </button>
+</div>
+
+<div class="card border-0 shadow-sm rounded-4">
+  <div class="card-body p-0">
+    <table class="table admin-table mb-0">
+      <thead><tr>
+        <th class="ps-4">Mã</th><th>Loại GG</th><th>Giá trị</th><th>Đơn tối thiểu</th><th>Hạn dùng</th><th>Đã dùng</th><th>Trạng thái</th><th class="text-end pe-4">Thao tác</th>
+      </tr></thead>
+      <tbody>
+      @if (Model is JsonElement el && el.ValueKind == JsonValueKind.Array)
+      {
+          foreach (var v in el.EnumerateArray())
+          {
+              var vid       = v.GetProperty("voucherId").GetInt32();
+              var code      = v.GetProperty("code").GetString();
+              var dtype     = v.GetProperty("discountType").GetString();
+              var dval      = v.GetProperty("discountValue").GetDecimal();
+              var minOrder  = v.GetProperty("minOrderAmount").GetDecimal();
+              var maxDisc   = v.TryGetProperty("maxDiscountAmount", out var md) && md.ValueKind != JsonValueKind.Null ? (decimal?)md.GetDecimal() : null;
+              var used      = v.GetProperty("usedCount").GetInt32();
+              var limit     = v.TryGetProperty("usageLimit", out var ul) && ul.ValueKind != JsonValueKind.Null ? (int?)ul.GetInt32() : null;
+              var start     = v.GetProperty("startDate").GetDateTime();
+              var end       = v.GetProperty("endDate").GetDateTime();
+              var active    = v.GetProperty("isActive").GetBoolean();
+              var desc      = v.TryGetProperty("description", out var dsc) && dsc.ValueKind != JsonValueKind.Null ? dsc.GetString() : null;
+              var perUser   = v.TryGetProperty("usageLimitPerUser", out var up) && up.ValueKind != JsonValueKind.Null ? (int?)up.GetInt32() : null;
+              var now       = DateTime.UtcNow;
+              var expired   = end < now;
+              <tr>
+                <td class="ps-4"><code class="fw-bold text-primary">@code</code><div class="text-muted small">@desc</div></td>
+                <td>
+                  @if(dtype=="Percentage"){<span class="badge bg-info rounded-pill px-3">%</span> <span class="fw-bold">@dval%</span>}
+                  else{<span class="badge bg-warning text-dark rounded-pill px-3">₫</span> <span class="fw-bold">@dval.ToString("N0")₫</span>}
+                </td>
+                <td class="small text-muted">Tối thiểu @minOrder.ToString("N0")₫@(maxDisc.HasValue ? $"\nTối đa {maxDisc.Value:N0}₫" : "")</td>
+                <td class="small">@start.ToString("dd/MM/yy") — @end.ToString("dd/MM/yy")</td>
+                <td class="small">@used@(limit.HasValue ? $"/{limit}" : "")</td>
+                <td>
+                  @if (expired){<span class="badge bg-secondary rounded-pill px-3">Hết hạn</span>}
+                  else if (active){<span class="badge bg-success rounded-pill px-3">Đang dùng</span>}
+                  else{<span class="badge bg-warning text-dark rounded-pill px-3">Tắt</span>}
+                </td>
+                <td class="text-end pe-4">
+                  <button class="btn btn-sm btn-outline-primary rounded-3 me-1"
+                          onclick="openModal(@vid,'@desc?.Replace("'","\\'")','@dtype',@dval,@minOrder,@(maxDisc.HasValue?maxDisc.ToString():"null"),@(limit.HasValue?limit.ToString():"null"),@(perUser.HasValue?perUser.ToString():"null"),'@start.ToString("yyyy-MM-ddTHH:mm")','@end.ToString("yyyy-MM-ddTHH:mm")',@active.ToString().ToLower())"
+                          data-bs-toggle="modal" data-bs-target="#voucherModal"><i class="bi bi-pencil"></i></button>
+                  @if (used == 0)
+                  {
+                      <form asp-action="Delete" asp-route-id="@vid" method="post" class="d-inline" onsubmit="return confirm('Xóa voucher này?')">
+                        @Html.AntiForgeryToken()
+                        <button type="submit" class="btn btn-sm btn-outline-danger rounded-3"><i class="bi bi-trash"></i></button>
+                      </form>
+                  }
+                </td>
+              </tr>
+          }
+      }
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="modal fade" id="voucherModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content border-0 shadow-lg rounded-4">
+      <div class="modal-header border-0"><h5 class="modal-title fw-bold" id="vMTitle">Voucher</h5><button class="btn-close" data-bs-dismiss="modal"></button></div>
+      <form id="vForm" method="post">@Html.AntiForgeryToken()
+        <div class="modal-body p-4">
+          <div class="row g-3">
+            <div class="col-md-4" id="codeWrap">
+              <label class="form-label fw-semibold">Mã voucher <span class="text-danger">*</span></label>
+              <input type="text" name="code" id="fVCode" class="form-control rounded-3" required maxlength="50" style="text-transform:uppercase">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label fw-semibold">Loại giảm giá <span class="text-danger">*</span></label>
+              <select name="discountType" id="fVType" class="form-select rounded-3" required>
+                <option value="Percentage">Phần trăm (%)</option>
+                <option value="Fixed">Số tiền cố định (₫)</option>
+              </select>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label fw-semibold">Giá trị giảm <span class="text-danger">*</span></label>
+              <input type="number" name="discountValue" id="fVVal" class="form-control rounded-3" required min="0.01" step="0.01">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label fw-semibold">Đơn hàng tối thiểu (₫)</label>
+              <input type="number" name="minOrderAmount" id="fVMin" class="form-control rounded-3" min="0" step="1000" value="0">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label fw-semibold">Giảm tối đa (₫)</label>
+              <input type="number" name="maxDiscountAmount" id="fVMax" class="form-control rounded-3" min="0" step="1000" placeholder="Không giới hạn">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label fw-semibold">Giới hạn dùng</label>
+              <input type="number" name="usageLimit" id="fVLim" class="form-control rounded-3" min="1" placeholder="Không giới hạn">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label fw-semibold">Giới hạn/người</label>
+              <input type="number" name="usageLimitPerUser" id="fVPerUser" class="form-control rounded-3" min="1" placeholder="Không giới hạn">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label fw-semibold">Bắt đầu <span class="text-danger">*</span></label>
+              <input type="datetime-local" name="startDate" id="fVStart" class="form-control rounded-3" required>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label fw-semibold">Kết thúc <span class="text-danger">*</span></label>
+              <input type="datetime-local" name="endDate" id="fVEnd" class="form-control rounded-3" required>
+            </div>
+            <div class="col-12">
+              <label class="form-label fw-semibold">Mô tả</label>
+              <input type="text" name="description" id="fVDesc" class="form-control rounded-3" maxlength="500">
+            </div>
+            <div class="col-12"><div class="form-check">
+              <input type="checkbox" name="isActive" id="fVActive" value="true" class="form-check-input" checked>
+              <label class="form-check-label" for="fVActive">Kích hoạt</label>
+            </div></div>
+          </div>
+        </div>
+        <div class="modal-footer border-0 justify-content-center gap-2">
+          <button type="button" class="btn btn-light rounded-3 px-4" data-bs-dismiss="modal">Hủy</button>
+          <button type="submit" class="btn btn-primary rounded-3 px-4">Lưu</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+@section Scripts {
+<script>
+function openModal(id, desc='', dtype='Percentage', val=0, min=0, max=null, lim=null, perUser=null, start='', end='', active=true) {
+    const isEdit = !!id;
+    document.getElementById('vMTitle').textContent = isEdit ? 'Sửa voucher' : 'Tạo voucher';
+    document.getElementById('vForm').action = isEdit ? `/Admin/Vouchers/Edit/${id}` : '/Admin/Vouchers/Create';
+    document.getElementById('codeWrap').style.display = isEdit ? 'none' : '';
+    document.getElementById('fVCode').required = !isEdit;
+    document.getElementById('fVType').disabled  = isEdit;
+    document.getElementById('fVDesc').value    = desc;
+    document.getElementById('fVType').value    = dtype;
+    document.getElementById('fVVal').value     = val;
+    document.getElementById('fVMin').value     = min;
+    document.getElementById('fVMax').value     = max ?? '';
+    document.getElementById('fVLim').value     = lim ?? '';
+    document.getElementById('fVPerUser').value = perUser ?? '';
+    document.getElementById('fVStart').value   = start;
+    document.getElementById('fVEnd').value     = end;
+    document.getElementById('fVActive').checked = active;
+}
+</script>
+}
