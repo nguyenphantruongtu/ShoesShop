@@ -14,16 +14,27 @@ public static class DbInitializer
 
         await context.Database.EnsureCreatedAsync();
 
-        if (await context.Roles.AnyAsync()) return;
-
-        var roles = new List<Role>
+        if (!await context.Roles.AnyAsync())
         {
-            new() { RoleName = "Admin", Description = "System administrator with full access" },
-            new() { RoleName = "Staff", Description = "Store staff with order management access" },
-            new() { RoleName = "Customer", Description = "Regular customer" }
-        };
+            var roles = new List<Role>
+            {
+                new() { RoleName = "Admin",    Description = "System administrator with full access" },
+                new() { RoleName = "Staff",    Description = "Store staff with order management access" },
+                new() { RoleName = "Customer", Description = "Regular customer" }
+            };
+            await context.Roles.AddRangeAsync(roles);
+            await context.SaveChangesAsync();
+        }
 
-        await context.Roles.AddRangeAsync(roles);
-        await context.SaveChangesAsync();
+        if (!await context.PaymentMethods.AnyAsync())
+        {
+            var methods = new List<PaymentMethod>
+            {
+                new() { MethodName = "COD",   Description = "Thanh toán khi nhận hàng", IsActive = true },
+                new() { MethodName = "PayOS", Description = "Thanh toán trực tuyến qua PayOS (QR / chuyển khoản)", IsActive = true }
+            };
+            await context.PaymentMethods.AddRangeAsync(methods);
+            await context.SaveChangesAsync();
+        }
     }
 }

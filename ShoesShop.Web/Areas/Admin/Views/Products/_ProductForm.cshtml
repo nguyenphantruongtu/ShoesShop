@@ -4,7 +4,7 @@
 @{
     JsonElement? categories = ViewBag.Categories is JsonElement ce ? ce : (JsonElement?)null;
     JsonElement? brands     = ViewBag.Brands     is JsonElement be ? be : (JsonElement?)null;
-    bool isEdit = Model != null;
+    bool isEdit = Model is JsonElement;
     JsonElement? p = Model is JsonElement pe ? pe : (JsonElement?)null;
 
     string V(string key, string def = "") => (p?.TryGetProperty(key, out var v) == true && v.ValueKind != JsonValueKind.Null) ? v.ToString() : def;

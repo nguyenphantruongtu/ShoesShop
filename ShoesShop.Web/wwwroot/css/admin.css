@@ -1,7 +1,7 @@
 /* ═══════════════════════════════════════════
    ShoesShop Admin Panel — Sidebar + Layout
 ═══════════════════════════════════════════ */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,400&display=swap');
 
 :root {
     --sidebar-bg: #0f172a;
@@ -13,7 +13,7 @@
 }
 
 body.admin-body {
-    font-family: 'Inter', sans-serif;
+    font-family: 'Be Vietnam Pro', 'Inter', sans-serif;
     background: #f1f5f9;
     margin: 0;
 }

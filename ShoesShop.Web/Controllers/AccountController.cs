@@ -227,7 +227,7 @@ public class AccountController : Controller
     {
         return role switch
         {
-            "Admin" => RedirectToAction("Index", "Home"),
+            "Admin" => Redirect("/Admin"),
             "Staff" => RedirectToAction("Index", "Home"),
             _ => RedirectToAction("Index", "Home")
         };

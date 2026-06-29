@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OData.ModelBuilder;
 using Microsoft.OpenApi.Models;
+using PayOS;
 using ShoesShop.Business.Interfaces;
 using ShoesShop.Business.Services;
 using ShoesShop.Data.Context;
@@ -72,6 +73,15 @@ public class Program
 
         // F14 – Dashboard
         builder.Services.AddScoped<IDashboardService, DashboardService>();
+
+        // F8 – Payment (PayOS)
+        builder.Services.AddSingleton(new PayOSClient(new PayOSOptions
+        {
+            ClientId    = builder.Configuration["PayOS:ClientId"]!,
+            ApiKey      = builder.Configuration["PayOS:ApiKey"]!,
+            ChecksumKey = builder.Configuration["PayOS:ChecksumKey"]!
+        }));
+        builder.Services.AddScoped<IPaymentService, PaymentService>();
 
         // ── AutoMapper ────────────────────────────────────────────────────
         builder.Services.AddAutoMapper(cfg =>

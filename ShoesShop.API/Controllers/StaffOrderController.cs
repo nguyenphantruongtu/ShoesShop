@@ -21,7 +21,12 @@ namespace ShoesShop.API.Controllers;
 public class StaffOrderController : ControllerBase
 {
     private readonly IOrderService _service;
-    public StaffOrderController(IOrderService service) => _service = service;
+    private readonly IPaymentService _payment;
+    public StaffOrderController(IOrderService service, IPaymentService payment)
+    {
+        _service = service;
+        _payment = payment;
+    }
 
     private int StaffId => int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
 
@@ -51,6 +56,7 @@ public class StaffOrderController : ControllerBase
     {
         try
         {
+            await _payment.SyncPaymentStatusAsync(orderId);
             var result = await _service.GetOrderDetailAsync(orderId);
             return Ok(ApiResponse<OrderDetailResponse>.Ok(result));
         }

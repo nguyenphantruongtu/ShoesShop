@@ -1,0 +1,37 @@
+@{
+    ViewData["Title"] = "Huỷ thanh toán — STRIDEX";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    int orderId = ViewBag.OrderId ?? 0;
+}
+
+<div class="container-xxl px-4 py-5" style="max-width:640px;margin:0 auto">
+    <div style="text-align:center;padding:60px 0">
+
+        <div style="width:80px;height:80px;background:#e63946;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 24px">
+            <i class="bi bi-x-lg" style="color:#fff;font-size:2rem"></i>
+        </div>
+
+        <h1 style="font-size:1.6rem;font-weight:900;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:12px">
+            Thanh toán bị huỷ
+        </h1>
+        <p style="color:#555;font-size:0.95rem;margin-bottom:8px">
+            Bạn đã huỷ giao dịch. Đơn hàng vẫn được giữ trong hệ thống.
+        </p>
+        <p style="color:#888;font-size:0.85rem">
+            Mã đơn hàng: <strong style="color:#000">#@orderId</strong>
+        </p>
+        <p style="color:#aaa;font-size:0.82rem;margin-top:8px">
+            Bạn có thể thanh toán lại trong phần "Đơn hàng của tôi".
+        </p>
+
+        <div class="d-flex gap-3 justify-content-center mt-5">
+            <a href="/Orders/@orderId" class="btn-black" style="padding:12px 28px">
+                <i class="bi bi-receipt me-2"></i>Xem đơn hàng
+            </a>
+            <a href="/Cart" class="btn-white" style="padding:12px 28px;border:1px solid #000">
+                <i class="bi bi-cart me-2"></i>Quay lại giỏ hàng
+            </a>
+        </div>
+
+    </div>
+</div>

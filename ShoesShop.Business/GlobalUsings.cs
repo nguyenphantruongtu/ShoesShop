@@ -13,3 +13,5 @@ global using ShoesShop.Shared.DTOs.Order;
 global using ShoesShop.Shared.DTOs.Voucher;
 global using ShoesShop.Shared.DTOs.Review;
 global using ShoesShop.Shared.DTOs.Dashboard;
+global using ShoesShop.Shared.DTOs.Payment;
+global using ShoesShop.Business.Interfaces;

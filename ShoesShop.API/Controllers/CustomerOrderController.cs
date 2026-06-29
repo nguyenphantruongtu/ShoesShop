@@ -18,9 +18,33 @@ namespace ShoesShop.API.Controllers;
 public class CustomerOrderController : ControllerBase
 {
     private readonly IOrderService _service;
-    public CustomerOrderController(IOrderService service) => _service = service;
+    private readonly IPaymentService _payment;
+    public CustomerOrderController(IOrderService service, IPaymentService payment)
+    {
+        _service = service;
+        _payment = payment;
+    }
 
     private int UserId => int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+
+    // ── UC-17: Tạo đơn hàng (checkout) ──────────────────────────────────────
+    [HttpPost]
+    public async Task<IActionResult> CreateOrder([FromBody] CreateOrderRequest request)
+    {
+        try
+        {
+            var orderId = await _service.CreateOrderAsync(request, UserId);
+            return Ok(ApiResponse<int>.Ok(orderId));
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(ApiResponse<int>.Fail(ex.Message));
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, ApiResponse<int>.Fail(ex.Message));
+        }
+    }
 
     // ── UC-19 ────────────────────────────────────────────────────────────────
 
@@ -49,6 +73,7 @@ public class CustomerOrderController : ControllerBase
     {
         try
         {
+            await _payment.SyncPaymentStatusAsync(orderId);
             var result = await _service.GetMyOrderDetailAsync(orderId, UserId);
             return Ok(ApiResponse<OrderDetailResponse>.Ok(result));
         }
