@@ -52,6 +52,9 @@ public class ProductService : IProductService
 
     public async Task<ProductDetailResponse> CreateAsync(CreateProductRequest request)
     {
+        if (request.SalePrice.HasValue && request.SalePrice.Value > request.BasePrice)
+            throw new ArgumentException("Giá khuyến mãi không được lớn hơn giá gốc.");
+
         var slug = string.IsNullOrWhiteSpace(request.Slug)
             ? SlugHelper.Generate(request.ProductName)
             : request.Slug;
@@ -100,6 +103,9 @@ public class ProductService : IProductService
     {
         var product = await _repo.GetByIdAsync(id)
             ?? throw new KeyNotFoundException("Không tìm thấy sản phẩm.");
+
+        if (request.SalePrice.HasValue && request.SalePrice.Value > request.BasePrice)
+            throw new ArgumentException("Giá khuyến mãi không được lớn hơn giá gốc.");
 
         var slug = string.IsNullOrWhiteSpace(request.Slug)
             ? SlugHelper.Generate(request.ProductName)

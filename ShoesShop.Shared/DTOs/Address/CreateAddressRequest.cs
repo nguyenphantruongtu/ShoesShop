@@ -9,7 +9,7 @@ public class CreateAddressRequest
     public string RecipientName { get; set; } = null!;
 
     [Required]
-    [MaxLength(20)]
+    [RegularExpression(@"^0\d{9}$", ErrorMessage = "Số điện thoại phải gồm 10 chữ số và bắt đầu bằng 0.")]
     public string Phone { get; set; } = null!;
 
     [Required]

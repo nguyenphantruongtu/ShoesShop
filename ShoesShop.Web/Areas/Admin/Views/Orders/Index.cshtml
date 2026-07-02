@@ -47,7 +47,13 @@
 
     <div class="card border-0 shadow-sm rounded-4">
       <div class="card-body p-0">
-        <div class="px-4 py-3 border-bottom"><span class="text-muted small">Tổng <strong>@total</strong> đơn hàng</span></div>
+        <div class="px-4 py-3 border-bottom d-flex align-items-center justify-content-between">
+            <span class="text-muted small">Tổng <strong>@total</strong> đơn hàng</span>
+            @if (string.IsNullOrEmpty(curStatus))
+            {
+                <span class="text-muted small"><i class="bi bi-info-circle me-1"></i>Đơn <strong>chờ xác nhận</strong> được ưu tiên hiển thị lên đầu</span>
+            }
+        </div>
         <table class="table admin-table mb-0">
           <thead><tr>
             <th class="ps-4">Mã đơn</th><th>Khách hàng</th><th>Sản phẩm</th><th>Tổng tiền</th><th>TT thanh toán</th><th>TT đơn</th><th>Ngày tạo</th><th class="text-end pe-4">Chi tiết</th>
@@ -64,6 +70,9 @@
                   var ostats = o.GetProperty("orderStatus").GetString() ?? "";
                   var pstats = o.GetProperty("paymentStatus").GetString() ?? "";
                   var date   = o.GetProperty("createdAt").GetDateTime();
+                  var previewItems = o.TryGetProperty("items", out var itemsEl) && itemsEl.ValueKind == JsonValueKind.Array
+                      ? itemsEl.EnumerateArray().ToList() : new List<JsonElement>();
+                  var extraCount = items - previewItems.Count;
                   var badgeCls = ostats switch {
                       "Delivered"  => "badge-status-delivered",
                       "Shipping"   => "badge-status-shipping",
@@ -72,10 +81,25 @@
                       "Cancelled"  => "badge-status-cancelled",
                       _            => "badge-status-pending"
                   };
-                  <tr>
+                  <tr class="@(string.IsNullOrEmpty(curStatus) && ostats == "Pending" ? "table-warning" : "")">
                     <td class="ps-4"><a asp-action="Detail" asp-route-id="@oid" class="fw-bold text-decoration-none">@code</a></td>
                     <td class="small">@cname</td>
-                    <td class="text-muted small">@items SP</td>
+                    <td>
+                        <div class="d-flex align-items-center gap-1">
+                            @foreach (var it in previewItems.Take(3))
+                            {
+                                var img = it.TryGetProperty("imageUrl", out var im) && im.ValueKind != JsonValueKind.Null ? im.GetString() : null;
+                                <img src="@(img ?? "https://placehold.co/40x40/f3f3f3/888?text=?")"
+                                     class="rounded-3 border" style="width:36px;height:36px;object-fit:cover"
+                                     onerror="this.src='https://placehold.co/40x40/f3f3f3/888?text=?'">
+                            }
+                            @if (extraCount > 0)
+                            {
+                                <span class="text-muted small">+@extraCount</span>
+                            }
+                        </div>
+                        <div class="text-muted small mt-1">@items SP</div>
+                    </td>
                     <td class="fw-bold small">@total2.ToString("N0")₫</td>
                     <td><span class="badge @(pstats=="Paid"?"bg-success":"bg-warning text-dark") rounded-pill px-3 small">@pstats</span></td>
                     <td><span class="badge @badgeCls rounded-pill px-3 small">@(statusVi.GetValueOrDefault(ostats, ostats))</span></td>

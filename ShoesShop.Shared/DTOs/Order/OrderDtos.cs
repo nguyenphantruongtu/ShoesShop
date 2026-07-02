@@ -32,9 +32,27 @@ public static class OrderStatus
     /// <summary>Trạng thái có thể bị hủy không</summary>
     public static bool IsCancellable(string status) =>
         status is Pending or Confirmed or Preparing;
+
+    /// <summary>
+    /// Các trạng thái mà tồn kho ĐÃ bị trừ khỏi DB. Tồn kho chỉ bị trừ khi staff
+    /// xác nhận đơn (Pending→Confirmed); đơn Pending chưa giữ kho. Dùng để biết
+    /// khi hủy đơn có cần hoàn kho hay không.
+    /// </summary>
+    public static bool IsStockDeducted(string status) =>
+        status is Confirmed or Preparing or Shipping or Delivered;
 }
 
 // ── RESPONSE DTOs ──────────────────────────────────────────────────────────────
+
+/// <summary>Bản xem trước 1 sản phẩm trong đơn — dùng để hiển thị ảnh thu nhỏ ở danh sách đơn hàng</summary>
+public class OrderItemPreview
+{
+    public string ProductName { get; set; } = null!;
+    public string? ImageUrl { get; set; }
+    public string SizeValue { get; set; } = null!;
+    public string ColorName { get; set; } = null!;
+    public int Quantity { get; set; }
+}
 
 public class OrderListItem
 {
@@ -48,6 +66,8 @@ public class OrderListItem
     public int ItemCount { get; set; }
     public DateTime CreatedAt { get; set; }
     public string? HandledByStaff { get; set; }
+    /// <summary>Vài sản phẩm đầu để hiển thị ảnh thu nhỏ (Shopee-style) ở danh sách đơn hàng</summary>
+    public List<OrderItemPreview> Items { get; set; } = new();
 }
 
 public class OrderListResponse
@@ -64,24 +84,16 @@ public class OrderItemResponse
     public int OrderItemId { get; set; }
     public int VariantId { get; set; }
     public string ProductName { get; set; } = null!;
+    public string? PrimaryImageUrl { get; set; }
     public string SizeValue { get; set; } = null!;
     public string ColorName { get; set; } = null!;
     public string? Sku { get; set; }
     public decimal UnitPrice { get; set; }
     public int Quantity { get; set; }
     public decimal LineTotal { get; set; }
-}
-
-public class ShipmentResponse
-{
-    public int ShipmentId { get; set; }
-    public string CarrierName { get; set; } = null!;
-    public string? TrackingNumber { get; set; }
-    public string ShippingStatus { get; set; } = null!;
-    public DateTime? ShippedAt { get; set; }
-    public DateOnly? EstimatedDeliveryDate { get; set; }
-    public DateTime? DeliveredAt { get; set; }
-    public string? Note { get; set; }
+    /// <summary>True nếu khách đã gửi đánh giá cho sản phẩm này trong đơn hàng</summary>
+    public bool IsReviewed { get; set; }
+    public int ProductId { get; set; }
 }
 
 public class OrderStatusHistoryResponse
@@ -113,9 +125,9 @@ public class OrderDetailResponse
 
     // Amounts
     public decimal SubTotal { get; set; }
-    public decimal ShippingFee { get; set; }
     public decimal DiscountAmount { get; set; }
     public decimal TotalAmount { get; set; }
+    public string? VoucherCode { get; set; }
 
     // Status
     public string OrderStatus { get; set; } = null!;
@@ -129,7 +141,6 @@ public class OrderDetailResponse
     public DateTime? UpdatedAt { get; set; }
 
     public List<OrderItemResponse> Items { get; set; } = new();
-    public ShipmentResponse? Shipment { get; set; }
     public List<OrderStatusHistoryResponse> StatusHistory { get; set; } = new();
 }
 
@@ -142,11 +153,6 @@ public class UpdateOrderStatusRequest
     public string NewStatus { get; set; } = null!;
 
     public string? Note { get; set; }
-
-    // UC-34: Bắt buộc khi NewStatus = "Shipping"
-    public string? CarrierName { get; set; }
-    public string? TrackingNumber { get; set; }
-    public DateOnly? EstimatedDeliveryDate { get; set; }
 }
 
 /// <summary>UC-35: Hủy đơn + lý do</summary>
@@ -161,26 +167,40 @@ public class CancelOrderRequest
 public class CreateOrderRequest
 {
     [Required] public string RecipientName    { get; set; } = null!;
-    [Required] public string RecipientPhone   { get; set; } = null!;
+    [Required]
+    [RegularExpression(@"^0\d{9}$", ErrorMessage = "Số điện thoại phải gồm 10 chữ số và bắt đầu bằng 0.")]
+    public string RecipientPhone              { get; set; } = null!;
     [Required] public string ShippingAddress  { get; set; } = null!;
     [Required] public string Province         { get; set; } = null!;
     [Required] public string District         { get; set; } = null!;
     [Required] public string Ward             { get; set; } = null!;
     public string? Note                       { get; set; }
-    public int? VoucherId                     { get; set; }
+    /// <summary>Phương thức thanh toán: "COD" (thanh toán khi nhận hàng) hoặc "PayOS" (thanh toán trực tiếp).</summary>
+    public string PaymentMethod               { get; set; } = "COD";
+    /// <summary>Mã voucher khách áp dụng (tuỳ chọn) — server tự validate lại + tính giảm giá, không tin DiscountAmount client gửi.</summary>
+    [MaxLength(50)]
+    public string? VoucherCode                { get; set; }
+
+    // ⚠ Các trường số tiền dưới đây do server TỰ TÍNH lại từ DB (xem OrderService.CreateOrderAsync).
+    //   Giá trị client gửi lên chỉ để hiển thị, KHÔNG được tin dùng để lưu.
     public decimal SubTotal                   { get; set; }
-    public decimal ShippingFee                { get; set; }
     public decimal DiscountAmount             { get; set; }
     public decimal TotalAmount                { get; set; }
+
+    [Required]
+    [MinLength(1, ErrorMessage = "Đơn hàng phải có ít nhất 1 sản phẩm.")]
     public List<CreateOrderItemRequest> Items { get; set; } = new();
 }
 
 public class CreateOrderItemRequest
 {
+    [Range(1, int.MaxValue, ErrorMessage = "VariantId không hợp lệ.")]
     public int     VariantId   { get; set; }
+    // ProductName/SizeValue/ColorName/UnitPrice do server lấy lại từ DB — client gửi chỉ tham khảo.
     public string  ProductName { get; set; } = null!;
     public string  SizeValue   { get; set; } = null!;
     public string  ColorName   { get; set; } = null!;
     public decimal UnitPrice   { get; set; }
+    [Range(1, int.MaxValue, ErrorMessage = "Số lượng phải ít nhất là 1.")]
     public int     Quantity    { get; set; }
 }

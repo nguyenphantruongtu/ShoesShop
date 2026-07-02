@@ -22,7 +22,28 @@ public class VoucherResponse
     public DateTime CreatedAt { get; set; }
 }
 
+/// <summary>Kết quả kiểm tra + tính giảm giá khi khách áp mã voucher ở checkout (chưa ghi DB)</summary>
+public class VoucherPreviewResponse
+{
+    public int VoucherId { get; set; }
+    public string Code { get; set; } = null!;
+    public string DiscountType { get; set; } = null!;
+    public decimal DiscountValue { get; set; }
+    public decimal DiscountAmount { get; set; }
+}
+
 // ── REQUEST DTOs ───────────────────────────────────────────────────────────────
+
+/// <summary>UC-16: Khách nhập mã voucher ở trang giỏ hàng/checkout để xem số tiền được giảm</summary>
+public class ApplyVoucherRequest
+{
+    [Required]
+    [MaxLength(50)]
+    public string Code { get; set; } = null!;
+
+    [Range(0, double.MaxValue)]
+    public decimal SubTotal { get; set; }
+}
 
 public class CreateVoucherRequest
 {
@@ -43,10 +64,13 @@ public class CreateVoucherRequest
     [Range(0, double.MaxValue)]
     public decimal MinOrderAmount { get; set; }
 
+    [Range(0, double.MaxValue)]
     public decimal? MaxDiscountAmount { get; set; }
 
+    [Range(1, int.MaxValue)]
     public int? UsageLimit { get; set; }
 
+    [Range(1, int.MaxValue)]
     public int? UsageLimitPerUser { get; set; }
 
     [Required]
@@ -69,10 +93,13 @@ public class UpdateVoucherRequest
     [Range(0, double.MaxValue)]
     public decimal MinOrderAmount { get; set; }
 
+    [Range(0, double.MaxValue)]
     public decimal? MaxDiscountAmount { get; set; }
 
+    [Range(1, int.MaxValue)]
     public int? UsageLimit { get; set; }
 
+    [Range(1, int.MaxValue)]
     public int? UsageLimitPerUser { get; set; }
 
     [Required]

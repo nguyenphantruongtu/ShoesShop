@@ -1,13 +1,19 @@
+using System.ComponentModel.DataAnnotations;
+
 namespace ShoesShop.Shared.DTOs.Cart;
 
 public class AddToCartRequest
 {
+    [Range(1, int.MaxValue, ErrorMessage = "VariantId không hợp lệ.")]
     public int VariantId { get; set; }
+
+    [Range(1, int.MaxValue, ErrorMessage = "Số lượng phải ít nhất là 1.")]
     public int Quantity { get; set; } = 1;
 }
 
 public class UpdateCartItemRequest
 {
+    [Range(0, int.MaxValue, ErrorMessage = "Số lượng không hợp lệ.")]
     public int Quantity { get; set; }
 }
 

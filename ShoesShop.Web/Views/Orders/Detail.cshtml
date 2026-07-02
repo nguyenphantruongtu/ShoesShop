@@ -8,7 +8,6 @@
     var pStatus  = Model.GetProperty("paymentStatus").GetString() ?? "";
     var items    = Model.GetProperty("items");
     var history  = Model.TryGetProperty("statusHistory", out var h) ? h : default;
-    var shipment = Model.TryGetProperty("shipment", out var sh) && sh.ValueKind != JsonValueKind.Null ? sh : (JsonElement?)null;
 
     var statusVi = new Dictionary<string,string>{
         ["Pending"]="Chờ xác nhận",["Confirmed"]="Đã xác nhận",["Preparing"]="Đang chuẩn bị",
@@ -39,6 +38,59 @@
             </button>
         }
     </div>
+
+    <!-- Tracking stepper -->
+    @if (status == "Cancelled")
+    {
+        var cancelReason  = Model.TryGetProperty("cancelReason", out var cr) && cr.ValueKind != JsonValueKind.Null ? cr.GetString() : null;
+        var cancelledAt   = Model.TryGetProperty("cancelledAt", out var ca) && ca.ValueKind != JsonValueKind.Null ? (DateTime?)ca.GetDateTime() : null;
+        <div class="tracking-cancelled mb-5">
+            <i class="bi bi-x-circle-fill"></i>
+            <div>
+                <div style="font-weight:700;font-size:0.9rem">Đơn hàng đã bị hủy@(cancelledAt.HasValue ? " · " + cancelledAt.Value.ToString("HH:mm dd/MM/yyyy") : "")</div>
+                @if (!string.IsNullOrEmpty(cancelReason))
+                {
+                    <div style="font-size:0.82rem;margin-top:2px">Lý do: @cancelReason</div>
+                }
+            </div>
+        </div>
+    }
+    else
+    {
+        var trackSteps = new (string Key, string Label, string Icon)[]
+        {
+            ("Pending",   "Chờ xác nhận",  "bi-receipt"),
+            ("Confirmed", "Đã xác nhận",   "bi-check-circle"),
+            ("Preparing", "Đang chuẩn bị", "bi-box-seam"),
+            ("Shipping",  "Đang giao",     "bi-truck"),
+            ("Delivered", "Đã giao",       "bi-check2-circle")
+        };
+        int curIdx = Array.FindIndex(trackSteps, s => s.Key == status);
+        <div class="tracking-stepper mb-5">
+            @for (int i = 0; i < trackSteps.Length; i++)
+            {
+                var st = trackSteps[i];
+                var stateCls = i < curIdx ? "done" : i == curIdx ? "current" : "";
+                <div class="tracking-step @stateCls">
+                    <div class="tracking-step-icon">
+                        @if (i < curIdx)
+                        {
+                            <i class="bi bi-check-lg"></i>
+                        }
+                        else
+                        {
+                            <i class="bi @st.Icon"></i>
+                        }
+                    </div>
+                    <div class="tracking-step-label">@st.Label</div>
+                </div>
+                if (i < trackSteps.Length - 1)
+                {
+                    <div class="tracking-connector @(i < curIdx ? "done" : "")"></div>
+                }
+            }
+        </div>
+    }
 
     <div class="row g-5">
 
@@ -107,13 +159,11 @@
                         <div style="font-size:0.8rem;color:#888;margin-bottom:4px">
                             Tạm tính: <span style="font-weight:600;color:#555">@Model.GetProperty("subTotal").GetDecimal().ToString("N0")₫</span>
                         </div>
-                        <div style="font-size:0.8rem;color:#888;margin-bottom:4px">
-                            Phí vận chuyển: <span style="font-weight:600;color:#555">@Model.GetProperty("shippingFee").GetDecimal().ToString("N0")₫</span>
-                        </div>
                         @if (Model.GetProperty("discountAmount").GetDecimal() > 0)
                         {
+                            var voucherCode = Model.TryGetProperty("voucherCode", out var vc) && vc.ValueKind != JsonValueKind.Null ? vc.GetString() : null;
                             <div style="font-size:0.8rem;color:#2d6a4f;margin-bottom:4px">
-                                Giảm giá: <span style="font-weight:600">-@Model.GetProperty("discountAmount").GetDecimal().ToString("N0")₫</span>
+                                Giảm giá@(string.IsNullOrEmpty(voucherCode) ? "" : $" ({voucherCode})"): <span style="font-weight:600">-@Model.GetProperty("discountAmount").GetDecimal().ToString("N0")₫</span>
                             </div>
                         }
                         <div style="font-size:1.1rem;font-weight:900;margin-top:8px;padding-top:8px;border-top:1px solid #eee">
@@ -188,29 +238,6 @@
                 </div>
             </div>
 
-            <!-- Carrier -->
-            @if (shipment.HasValue)
-            {
-                <div style="border:1px solid #eee;padding:20px 24px;margin-bottom:16px">
-                    <div style="font-size:0.75rem;font-weight:800;text-transform:uppercase;letter-spacing:0.12em;margin-bottom:16px">
-                        Vận chuyển
-                    </div>
-                    <div style="font-size:0.82rem;line-height:1.9">
-                        <span style="color:#666">Đơn vị: </span>
-                        <strong>@shipment.Value.GetProperty("carrierName").GetString()</strong><br>
-                        @{var tn = shipment.Value.TryGetProperty("trackingNumber", out var tnn) && tnn.ValueKind != JsonValueKind.Null ? tnn.GetString() : null;}
-                        @if (!string.IsNullOrEmpty(tn))
-                        {
-                            <span style="color:#666">Mã vận đơn: </span><code style="font-size:0.82rem">@tn</code><br>
-                        }
-                        @{var eta = shipment.Value.TryGetProperty("estimatedDeliveryDate", out var etad) && etad.ValueKind != JsonValueKind.Null ? (DateTime?)etad.GetDateTime() : null;}
-                        @if (eta.HasValue)
-                        {
-                            <span style="color:#666">Dự kiến giao: </span><strong>@eta.Value.ToString("dd/MM/yyyy")</strong>
-                        }
-                    </div>
-                </div>
-            }
         </div>
     </div>
 </div>
@@ -303,4 +330,49 @@ function setRating(val) {
     });
 }
 </script>
+<style>
+.tracking-stepper {
+    display: flex;
+    align-items: flex-start;
+    overflow-x: auto;
+    padding-bottom: 4px;
+}
+.tracking-step {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    flex: 0 0 auto;
+    width: 96px;
+    text-align: center;
+}
+.tracking-step-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+    border: 2px solid #ddd;
+    color: #bbb;
+    background: #fff;
+    flex-shrink: 0;
+}
+.tracking-step.done .tracking-step-icon { background: #000; border-color: #000; color: #fff; }
+.tracking-step.current .tracking-step-icon { border-color: #000; color: #000; }
+.tracking-step-label { font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em; margin-top: 8px; color: #bbb; }
+.tracking-step.done .tracking-step-label, .tracking-step.current .tracking-step-label { color: #000; }
+.tracking-connector { flex: 1; min-width: 24px; height: 2px; background: #ddd; margin-top: 19px; }
+.tracking-connector.done { background: #000; }
+.tracking-cancelled {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 18px 24px;
+    background: #fdf1f2;
+    border: 1px solid #f5c2c7;
+    color: #842029;
+}
+.tracking-cancelled i { font-size: 1.6rem; flex-shrink: 0; }
+</style>
 }

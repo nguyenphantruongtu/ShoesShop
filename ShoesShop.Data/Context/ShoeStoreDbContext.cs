@@ -46,8 +46,6 @@ public partial class ShoeStoreDbContext : DbContext
 
     public virtual DbSet<Role> Roles { get; set; }
 
-    public virtual DbSet<Shipment> Shipments { get; set; }
-
     public virtual DbSet<Size> Sizes { get; set; }
 
     public virtual DbSet<User> Users { get; set; }
@@ -196,7 +194,6 @@ public partial class ShoeStoreDbContext : DbContext
             entity.Property(e => e.RecipientName).HasMaxLength(100);
             entity.Property(e => e.RecipientPhone).HasMaxLength(20);
             entity.Property(e => e.ShippingAddress).HasMaxLength(500);
-            entity.Property(e => e.ShippingFee).HasColumnType("decimal(18, 2)");
             entity.Property(e => e.SubTotal).HasColumnType("decimal(18, 2)");
             entity.Property(e => e.TotalAmount).HasColumnType("decimal(18, 2)");
             entity.Property(e => e.Ward).HasMaxLength(100);
@@ -401,24 +398,6 @@ public partial class ShoeStoreDbContext : DbContext
 
             entity.Property(e => e.Description).HasMaxLength(255);
             entity.Property(e => e.RoleName).HasMaxLength(50);
-        });
-
-        modelBuilder.Entity<Shipment>(entity =>
-        {
-            entity.HasKey(e => e.ShipmentId).HasName("PK__Shipment__5CAD37ED5DD16B0E");
-
-            entity.HasIndex(e => e.OrderId, "UQ__Shipment__C3905BCEAF0FA892").IsUnique();
-
-            entity.Property(e => e.CarrierName).HasMaxLength(100);
-            entity.Property(e => e.Note).HasMaxLength(500);
-            entity.Property(e => e.ShippingStatus)
-                .HasMaxLength(30)
-                .HasDefaultValue("Pending");
-            entity.Property(e => e.TrackingNumber).HasMaxLength(100);
-
-            entity.HasOne(d => d.Order).WithOne(p => p.Shipment)
-                .HasForeignKey<Shipment>(d => d.OrderId)
-                .HasConstraintName("FK_Shipments_Orders");
         });
 
         modelBuilder.Entity<Size>(entity =>

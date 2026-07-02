@@ -73,28 +73,38 @@
                     var total2 = ord.GetProperty("totalAmount").GetDecimal();
                     var itemCt = ord.GetProperty("itemCount").GetInt32();
                     var date   = ord.GetProperty("createdAt").GetDateTime();
-                    <div style="border:1px solid #eee;padding:20px 24px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px">
-                        <div style="display:flex;align-items:center;gap:16px">
-                            <!-- Status dot -->
-                            <div class="status-badge status-@ostats" style="align-self:flex-start;margin-top:2px">
-                                @(statusVi.GetValueOrDefault(ostats, ostats))
+                    var previewItems = ord.TryGetProperty("items", out var itemsEl) && itemsEl.ValueKind == JsonValueKind.Array
+                        ? itemsEl.EnumerateArray().ToList() : new List<JsonElement>();
+                    var extraCount = itemCt - previewItems.Count;
+                    <a asp-action="Detail" asp-route-id="@oid" class="order-card">
+                        <div class="order-card-head">
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="status-badge status-@ostats">@(statusVi.GetValueOrDefault(ostats, ostats))</span>
+                                <span style="font-weight:800;font-size:0.82rem;letter-spacing:0.04em">@code</span>
                             </div>
-                            <div>
-                                <div style="font-weight:800;font-size:0.88rem;text-transform:uppercase;letter-spacing:0.04em">@code</div>
-                                <div style="font-size:0.75rem;color:#888;margin-top:3px">
-                                    @date.ToString("HH:mm dd/MM/yyyy") &nbsp;·&nbsp; @itemCt sản phẩm
-                                </div>
+                            <span style="font-size:0.75rem;color:#888">@date.ToString("HH:mm dd/MM/yyyy")</span>
+                        </div>
+                        <div class="order-card-body">
+                            <div class="order-thumbs">
+                                @foreach (var it in previewItems)
+                                {
+                                    var img = it.TryGetProperty("imageUrl", out var im) && im.ValueKind != JsonValueKind.Null ? im.GetString() : null;
+                                    <img src="@(img ?? "https://placehold.co/72x72/f3f3f3/888?text=?")"
+                                         alt="" class="order-thumb"
+                                         onerror="this.src='https://placehold.co/72x72/f3f3f3/888?text=?'">
+                                }
+                                @if (extraCount > 0)
+                                {
+                                    <div class="order-thumb order-thumb-more">+@extraCount</div>
+                                }
                             </div>
+                            <div class="order-card-info">
+                                <div style="font-size:0.82rem;color:#555">@itemCt sản phẩm</div>
+                                <div style="font-weight:900;font-size:1.05rem;margin-top:4px">@total2.ToString("N0")₫</div>
+                            </div>
+                            <span class="order-card-cta">Xem chi tiết <i class="bi bi-chevron-right"></i></span>
                         </div>
-                        <div style="display:flex;align-items:center;gap:20px">
-                            <div style="font-weight:900;font-size:1.05rem">@total2.ToString("N0")₫</div>
-                            <a asp-action="Detail" asp-route-id="@oid"
-                               style="font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;
-                                      color:#000;text-decoration:none;border-bottom:1px solid #000;white-space:nowrap">
-                                Xem chi tiết →
-                            </a>
-                        </div>
-                    </div>
+                    </a>
                 }
             }
             </div>
@@ -123,3 +133,71 @@
         </div>
     }
 </div>
+
+<style>
+.order-card {
+    display: block;
+    border: 1px solid #eee;
+    padding: 16px 24px;
+    text-decoration: none;
+    color: inherit;
+    transition: border-color 0.15s, box-shadow 0.15s;
+}
+.order-card:hover {
+    border-color: #000;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.06);
+    color: inherit;
+}
+.order-card-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-bottom: 12px;
+    margin-bottom: 14px;
+    border-bottom: 1px solid #f3f3f3;
+}
+.order-card-body {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    flex-wrap: wrap;
+}
+.order-thumbs {
+    display: flex;
+    gap: 8px;
+    flex-shrink: 0;
+}
+.order-thumb {
+    width: 64px;
+    height: 64px;
+    object-fit: cover;
+    border: 1px solid #eee;
+    background: #f8f8f8;
+}
+.order-thumb-more {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #f3f3f3;
+    color: #666;
+    font-size: 0.8rem;
+    font-weight: 700;
+}
+.order-card-info {
+    flex: 1;
+    min-width: 120px;
+}
+.order-card-cta {
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #000;
+    white-space: nowrap;
+    margin-left: auto;
+}
+@@media (max-width: 576px) {
+    .order-card-body { gap: 12px; }
+    .order-thumb, .order-thumb-more { width: 52px; height: 52px; }
+}
+</style>

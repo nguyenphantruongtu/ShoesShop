@@ -25,8 +25,6 @@ public partial class Order
 
     public decimal SubTotal { get; set; }
 
-    public decimal ShippingFee { get; set; }
-
     public decimal DiscountAmount { get; set; }
 
     public decimal TotalAmount { get; set; }
@@ -56,8 +54,6 @@ public partial class Order
     public virtual ICollection<OrderStatusHistory> OrderStatusHistories { get; set; } = new List<OrderStatusHistory>();
 
     public virtual ICollection<Payment> Payments { get; set; } = new List<Payment>();
-
-    public virtual Shipment? Shipment { get; set; }
 
     public virtual User User { get; set; } = null!;
 

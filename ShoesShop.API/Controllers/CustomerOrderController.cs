@@ -10,7 +10,6 @@ namespace ShoesShop.API.Controllers;
 /// F9. Order Tracking (Customer)
 /// UC-19: GET /api/orders          — Lịch sử đơn hàng (filter theo status)
 /// UC-20: GET /api/orders/{id}     — Chi tiết đơn + timeline trạng thái
-/// UC-22: (trong UC-20, kèm Shipment.TrackingNumber + CarrierName)
 /// </summary>
 [ApiController]
 [Route("api/orders")]
@@ -66,7 +65,7 @@ public class CustomerOrderController : ControllerBase
 
     /// <summary>
     /// Chi tiết đơn hàng của customer.
-    /// Response bao gồm: Items, StatusHistory (timeline), Shipment (tracking number + carrier - UC-22)
+    /// Response bao gồm: Items, StatusHistory (timeline trạng thái đơn).
     /// </summary>
     [HttpGet("{orderId:int}")]
     public async Task<IActionResult> GetMyOrderDetail(int orderId)

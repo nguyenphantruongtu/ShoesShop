@@ -15,15 +15,16 @@ public interface IOrderRepository
     Task<(List<Order> Orders, int TotalCount)> GetPaginatedAsync(
         string? search, string? status, int page, int pageSize);
 
-    /// <summary>Chi tiết đơn: kèm Items (Variant), Shipment, StatusHistory, User</summary>
+    /// <summary>Chi tiết đơn: kèm Items (Variant), StatusHistory, User</summary>
     Task<Order?> GetByIdWithDetailsAsync(int orderId);
 
     Task UpdateAsync(Order order);
     Task AddStatusHistoryAsync(OrderStatusHistory history);
 
-    Task<Shipment?> GetShipmentByOrderIdAsync(int orderId);
-    Task AddShipmentAsync(Shipment shipment);
-    Task UpdateShipmentAsync(Shipment shipment);
+    // Payment (ghi nhận phương thức + đánh dấu Paid khi COD giao thành công)
+    Task<PaymentMethod?> GetPaymentMethodByNameAsync(string methodName);
+    Task<Payment?> GetPaymentByOrderIdAsync(int orderId);
+    Task UpdatePaymentAsync(Payment payment);
 
     /// <summary>Lấy variant để rollback stock khi hủy đơn</summary>
     Task<ProductVariant?> GetVariantByIdAsync(int variantId);

@@ -8,8 +8,23 @@
     var pStatus  = Model.GetProperty("paymentStatus").GetString() ?? "";
     var items    = Model.GetProperty("items");
     var history  = Model.TryGetProperty("statusHistory", out var h) ? h : default;
-    var shipment = Model.TryGetProperty("shipment", out var sh) && sh.ValueKind != JsonValueKind.Null ? sh : (JsonElement?)null;
     var statusVi = new Dictionary<string,string> { ["Pending"]="Chờ xác nhận",["Confirmed"]="Đã xác nhận",["Preparing"]="Đang chuẩn bị",["Shipping"]="Đang giao",["Delivered"]="Đã giao",["Cancelled"]="Đã hủy" };
+
+    // Mỗi trạng thái chỉ có đúng 1 bước kế tiếp hợp lệ — hiển thị thẳng luôn, không cần chọn.
+    var nextStatus = status switch
+    {
+        "Confirmed" => "Preparing",
+        "Preparing" => "Shipping",
+        "Shipping"  => "Delivered",
+        _ => null
+    };
+    var nextStatusIcon = nextStatus switch
+    {
+        "Preparing" => "bi-box-seam",
+        "Shipping"  => "bi-truck",
+        "Delivered" => "bi-check2-circle",
+        _ => "bi-arrow-right-circle"
+    };
 }
 
 <div class="page-header d-flex justify-content-between align-items-center">
@@ -24,16 +39,22 @@
       <div class="card-body p-4">
         <h5 class="fw-bold mb-3"><i class="bi bi-bag me-2 text-primary"></i>Sản phẩm đặt mua</h5>
         <table class="table align-middle mb-0">
-          <thead class="table-light small text-uppercase"><tr><th>Sản phẩm</th><th>Size/Màu</th><th>ĐVG</th><th>SL</th><th class="text-end">Thành tiền</th></tr></thead>
+          <thead class="table-light small text-uppercase"><tr><th></th><th>Sản phẩm</th><th>Size/Màu</th><th>ĐVG</th><th>SL</th><th class="text-end">Thành tiền</th></tr></thead>
           <tbody>
           @if (items.ValueKind == JsonValueKind.Array)
               foreach (var it in items.EnumerateArray())
               {
+                  var itImg = it.TryGetProperty("primaryImageUrl", out var itImgEl) && itImgEl.ValueKind != JsonValueKind.Null ? itImgEl.GetString() : null;
                   <tr>
+                    <td style="width:52px">
+                        <img src="@(itImg ?? "https://placehold.co/44x44/f3f3f3/888?text=?")"
+                             class="rounded-3 border" style="width:44px;height:44px;object-fit:cover"
+                             onerror="this.src='https://placehold.co/44x44/f3f3f3/888?text=?'">
+                    </td>
                     <td class="fw-medium">@it.GetProperty("productName").GetString()</td>
                     <td class="text-muted small">@it.GetProperty("sizeValue").GetString() / @it.GetProperty("colorName").GetString()</td>
                     <td class="small">@it.GetProperty("unitPrice").GetDecimal().ToString("N0")₫</td>
-                    <td class="small">x@it.GetProperty("quantity").GetInt32()</td>
+                    <td class="small">x@(it.GetProperty("quantity").GetInt32())</td>
                     <td class="text-end fw-bold small">@it.GetProperty("lineTotal").GetDecimal().ToString("N0")₫</td>
                   </tr>
               }
@@ -42,10 +63,10 @@
         <hr class="my-3">
         <div class="d-flex flex-column gap-1 text-end">
           <div class="text-muted small">Tạm tính: <span class="fw-medium">@Model.GetProperty("subTotal").GetDecimal().ToString("N0")₫</span></div>
-          <div class="text-muted small">Phí giao: <span class="fw-medium">@Model.GetProperty("shippingFee").GetDecimal().ToString("N0")₫</span></div>
           @if (Model.GetProperty("discountAmount").GetDecimal() > 0)
           {
-              <div class="text-success small">Giảm giá: <span class="fw-medium">-@Model.GetProperty("discountAmount").GetDecimal().ToString("N0")₫</span></div>
+              var voucherCode = Model.TryGetProperty("voucherCode", out var vc) && vc.ValueKind != JsonValueKind.Null ? vc.GetString() : null;
+              <div class="text-success small">Giảm giá@(string.IsNullOrEmpty(voucherCode) ? "" : $" ({voucherCode})"): <span class="fw-medium">-@Model.GetProperty("discountAmount").GetDecimal().ToString("N0")₫</span></div>
           }
           <div class="fw-bold">Tổng cộng: <span class="text-primary fs-5">@Model.GetProperty("totalAmount").GetDecimal().ToString("N0")₫</span></div>
         </div>
@@ -115,32 +136,16 @@
                 <i class="bi bi-x-circle me-2"></i>Hủy đơn hàng
             </button>
         }
-        @if (status is "Confirmed" or "Preparing" or "Shipping")
+        @if (nextStatus != null)
         {
             <hr>
             <button class="btn btn-primary w-100 rounded-3" data-bs-toggle="modal" data-bs-target="#statusModal">
-                <i class="bi bi-arrow-right-circle me-2"></i>Chuyển trạng thái
+                <i class="bi @nextStatusIcon me-2"></i>@(statusVi.GetValueOrDefault(nextStatus, nextStatus))
             </button>
         }
       </div>
     </div>
 
-    @* Shipment *@
-    @if (shipment.HasValue)
-    {
-        <div class="card border-0 shadow-sm rounded-4">
-          <div class="card-body p-4">
-            <h5 class="fw-bold mb-3"><i class="bi bi-truck me-2 text-primary"></i>Vận chuyển</h5>
-            <div class="small d-flex flex-column gap-2">
-              <div><span class="text-muted">Đơn vị: </span><strong>@shipment.Value.GetProperty("carrierName").GetString()</strong></div>
-              @{var tn = shipment.Value.TryGetProperty("trackingNumber", out var tnn) && tnn.ValueKind != JsonValueKind.Null ? tnn.GetString() : null;}
-              @if (!string.IsNullOrEmpty(tn)){<div><span class="text-muted">Mã vận đơn: </span><code>@tn</code></div>}
-              @{var eta = shipment.Value.TryGetProperty("estimatedDeliveryDate", out var etad) && etad.ValueKind != JsonValueKind.Null ? (DateTime?)etad.GetDateTime() : null;}
-              @if (eta.HasValue){<div><span class="text-muted">Dự kiến giao: </span>@eta.Value.ToString("dd/MM/yyyy")</div>}
-            </div>
-          </div>
-        </div>
-    }
   </div>
 </div>
 
@@ -164,48 +169,26 @@
 </div>
 
 @* Update Status Modal *@
-<div class="modal fade" id="statusModal" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog modal-dialog-centered">
-    <div class="modal-content border-0 shadow-lg rounded-4">
-      <div class="modal-header border-0"><h5 class="modal-title fw-bold"><i class="bi bi-arrow-right-circle me-2 text-primary"></i>Cập nhật trạng thái</h5><button class="btn-close" data-bs-dismiss="modal"></button></div>
-      <form asp-action="UpdateStatus" asp-route-id="@orderId" method="post">@Html.AntiForgeryToken()
-        <div class="modal-body p-4">
-          <div class="mb-3">
-            <label class="form-label fw-semibold">Trạng thái mới <span class="text-danger">*</span></label>
-            <select name="newStatus" id="newStatusSel" class="form-select rounded-3" required onchange="toggleShipping(this.value)">
-              @if(status=="Confirmed"){<option value="Preparing">Đang chuẩn bị</option>}
-              @if(status is "Confirmed" or "Preparing"){<option value="Shipping">Đang giao hàng</option>}
-              @if(status=="Shipping"){<option value="Delivered">Đã giao hàng</option>}
-            </select>
-          </div>
-          <div class="mb-3"><label class="form-label fw-semibold">Ghi chú</label>
-            <input type="text" name="note" class="form-control rounded-3" maxlength="500"></div>
-          <div id="shippingFields" style="display:none">
-            <div class="mb-3"><label class="form-label fw-semibold">Đơn vị vận chuyển <span class="text-danger">*</span></label>
-              <input type="text" name="carrierName" id="fCarrier" class="form-control rounded-3" maxlength="100"></div>
-            <div class="mb-3"><label class="form-label fw-semibold">Mã vận đơn <span class="text-danger">*</span></label>
-              <input type="text" name="trackingNumber" id="fTracking" class="form-control rounded-3" maxlength="100"></div>
-            <div><label class="form-label fw-semibold">Ngày giao dự kiến</label>
-              <input type="date" name="estimatedDeliveryDate" class="form-control rounded-3"></div>
-          </div>
+@if (nextStatus != null)
+{
+    <div class="modal fade" id="statusModal" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg rounded-4">
+          <div class="modal-header border-0"><h5 class="modal-title fw-bold"><i class="bi @nextStatusIcon me-2 text-primary"></i>Chuyển sang "@(statusVi.GetValueOrDefault(nextStatus, nextStatus))"</h5><button class="btn-close" data-bs-dismiss="modal"></button></div>
+          <form asp-action="UpdateStatus" asp-route-id="@orderId" method="post">@Html.AntiForgeryToken()
+            <input type="hidden" name="newStatus" value="@nextStatus">
+            <div class="modal-body p-4">
+              <p class="text-muted mb-3">Xác nhận chuyển đơn hàng <strong>@code</strong> từ "<strong>@(statusVi.GetValueOrDefault(status, status))</strong>" sang "<strong>@(statusVi.GetValueOrDefault(nextStatus, nextStatus))</strong>"?</p>
+              <div><label class="form-label fw-semibold">Ghi chú</label>
+                <input type="text" name="note" class="form-control rounded-3" maxlength="500"></div>
+            </div>
+            <div class="modal-footer border-0 justify-content-center gap-2">
+              <button type="button" class="btn btn-light rounded-3 px-4" data-bs-dismiss="modal">Hủy</button>
+              <button type="submit" class="btn btn-primary rounded-3 px-4">Xác nhận</button>
+            </div>
+          </form>
         </div>
-        <div class="modal-footer border-0 justify-content-center gap-2">
-          <button type="button" class="btn btn-light rounded-3 px-4" data-bs-dismiss="modal">Hủy</button>
-          <button type="submit" class="btn btn-primary rounded-3 px-4">Cập nhật</button>
-        </div>
-      </form>
+      </div>
     </div>
-  </div>
-</div>
+}
 
-@section Scripts {
-<script>
-function toggleShipping(val) {
-    const f = document.getElementById('shippingFields');
-    const c = document.getElementById('fCarrier');
-    const t = document.getElementById('fTracking');
-    if (val === 'Shipping') { f.style.display=''; c.required=true; t.required=true; }
-    else { f.style.display='none'; c.required=false; t.required=false; }
-}
-</script>
-}

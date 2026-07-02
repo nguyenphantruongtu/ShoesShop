@@ -227,14 +227,13 @@
     <div class="py-5" style="border-top:1px solid #eee" id="size-guide">
         <div class="d-flex align-items-center justify-content-between mb-5">
             <h3 style="font-size:0.9rem;font-weight:800;text-transform:uppercase;letter-spacing:0.12em;margin:0">
-                Đánh giá khách hàng (@pRevCount)
+                Đánh giá khách hàng (@reviews.Count)
             </h3>
             @if (User.IsInRole("Customer"))
             {
-                <button class="btn-black" style="padding:9px 20px;font-size:0.75rem"
-                        onclick="document.getElementById('reviewForm').scrollIntoView({behavior:'smooth'})">
+                <a asp-controller="Orders" asp-action="Index" class="btn-black" style="padding:9px 20px;font-size:0.75rem">
                     Viết đánh giá
-                </button>
+                </a>
             }
         </div>
 
@@ -281,7 +280,7 @@
             <div class="row row-cols-1 row-cols-md-2 g-4">
                 @foreach (var rv in reviews)
                 {
-                    var rName = rv.TryGetProperty("reviewerName", out var rn) && rn.ValueKind != JsonValueKind.Null ? rn.GetString() : "Khách hàng";
+                    var rName = rv.TryGetProperty("userName", out var rn) && rn.ValueKind != JsonValueKind.Null && !string.IsNullOrEmpty(rn.GetString()) ? rn.GetString() : "Khách hàng";
                     var rStar = rv.GetProperty("rating").GetInt32();
                     var rCmt  = rv.TryGetProperty("comment", out var rcmt) && rcmt.ValueKind != JsonValueKind.Null ? rcmt.GetString() : null;
                     var rDate = rv.GetProperty("createdAt").GetDateTime();
@@ -310,34 +309,18 @@
             </div>
         }
 
-        <!-- Review form -->
+        <!-- Ghi chú: đánh giá chỉ được gửi từ trang "Đơn hàng của tôi" sau khi đơn đã giao thành công,
+             để đảm bảo chỉ khách đã mua hàng thật mới có thể đánh giá. -->
         @if (User.IsInRole("Customer"))
         {
-            <div id="reviewForm" class="mt-5 pt-5" style="border-top:1px solid #eee">
-                <h4 style="font-size:0.85rem;font-weight:800;text-transform:uppercase;letter-spacing:0.12em;margin-bottom:24px">Viết đánh giá của bạn</h4>
-                <form asp-controller="Reviews" asp-action="Create" method="post">
-                    @Html.AntiForgeryToken()
-                    <input type="hidden" name="ProductId" value="@pProductId" />
-                    <div class="mb-3">
-                        <label class="form-label-clean">Số sao</label>
-                        <div class="d-flex gap-2">
-                            @for (int s = 1; s <= 5; s++)
-                            {
-                                <label style="cursor:pointer">
-                                    <input type="radio" name="Rating" value="@s" required style="display:none">
-                                    <i class="bi bi-star review-star" data-val="@s"
-                                       style="font-size:1.5rem;color:#ddd;cursor:pointer;transition:color 0.15s"></i>
-                                </label>
-                            }
-                        </div>
-                    </div>
-                    <div class="mb-4">
-                        <label class="form-label-clean">Nhận xét</label>
-                        <textarea name="Comment" rows="4" class="form-control-clean"
-                                  placeholder="Chia sẻ trải nghiệm của bạn về sản phẩm..."></textarea>
-                    </div>
-                    <button type="submit" class="btn-black">Gửi đánh giá</button>
-                </form>
+            <div class="mt-5 pt-5 text-center" style="border-top:1px solid #eee">
+                <i class="bi bi-star" style="font-size:1.8rem;color:#ddd"></i>
+                <p style="font-size:0.85rem;color:#888;margin:14px 0 18px">
+                    Bạn đã mua sản phẩm này? Vào trang đơn hàng để chia sẻ đánh giá của bạn.
+                </p>
+                <a asp-controller="Orders" asp-action="Index" class="btn-black" style="padding:9px 20px;font-size:0.75rem">
+                    Xem đơn hàng của tôi
+                </a>
             </div>
         }
     </div>
@@ -422,35 +405,6 @@ function showToast(msg, type) {
     document.body.appendChild(t);
     setTimeout(() => t.remove(), 3000);
 }
-
-// Star rating hover
-document.querySelectorAll('.review-star').forEach(star => {
-    star.addEventListener('mouseenter', function() {
-        const val = parseInt(this.dataset.val);
-        document.querySelectorAll('.review-star').forEach((s,i) => {
-            s.style.color = i < val ? '#f5a623' : '#ddd';
-            s.className = `bi bi-star${i < val ? '-fill' : ''} review-star`;
-        });
-    });
-    star.addEventListener('click', function() {
-        const val = parseInt(this.dataset.val);
-        this.closest('label').querySelector('input').checked = true;
-        document.querySelectorAll('.review-star').forEach((s,i) => {
-            s.style.color = i < val ? '#f5a623' : '#ddd';
-            s.className = `bi bi-star${i < val ? '-fill' : ''} review-star`;
-        });
-    });
-});
-document.querySelectorAll('.review-star').forEach(s => {
-    s.closest('div')?.addEventListener('mouseleave', () => {
-        const checked = document.querySelector('input[name="Rating"]:checked');
-        const val = checked ? parseInt(checked.value) : 0;
-        document.querySelectorAll('.review-star').forEach((star,i) => {
-            star.style.color = i < val ? '#f5a623' : '#ddd';
-            star.className = `bi bi-star${i < val ? '-fill' : ''} review-star`;
-        });
-    });
-});
 </script>
 <style>
 @@keyframes slideIn { from { opacity:0; transform:translateY(12px); } to { opacity:1; transform:translateY(0); } }

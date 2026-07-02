@@ -7,9 +7,16 @@ namespace ShoesShop.Web.Controllers;
 public class CartController : Controller
 {
     private const string CART_SESSION_KEY = "GuestCart";
+    private readonly IHttpContextAccessor _httpContextAccessor;
+
+    public CartController(IHttpContextAccessor httpContextAccessor)
+        => _httpContextAccessor = httpContextAccessor;
 
     public IActionResult Index()
     {
+        // Truyền JWT vào view để JS dùng khi gọi API áp mã voucher (chỉ customer đã đăng nhập)
+        ViewBag.JwtToken = _httpContextAccessor.HttpContext?.Session.GetString("JwtToken") ?? "";
+
         // Trả về giao diện giỏ hàng (Giao diện này sẽ dùng Ajax để gọi lấy dữ liệu hiển thị)
         return View();
     }

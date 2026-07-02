@@ -11,4 +11,7 @@ public interface IVoucherRepository
     Task AddAsync(Voucher voucher);
     Task UpdateAsync(Voucher voucher);
     Task DeleteAsync(Voucher voucher);
+
+    /// <summary>Số đơn hàng (không tính đơn đã hủy) mà user đã dùng voucher này — dùng để áp UsageLimitPerUser</summary>
+    Task<int> CountUserUsageAsync(int userId, int voucherId);
 }

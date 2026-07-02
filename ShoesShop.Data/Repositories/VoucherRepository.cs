@@ -39,4 +39,8 @@ public class VoucherRepository : IVoucherRepository
         _ctx.Vouchers.Remove(voucher);
         await _ctx.SaveChangesAsync();
     }
+
+    public async Task<int> CountUserUsageAsync(int userId, int voucherId)
+        => await _ctx.Orders.CountAsync(o =>
+            o.UserId == userId && o.VoucherId == voucherId && o.OrderStatus != "Cancelled");
 }

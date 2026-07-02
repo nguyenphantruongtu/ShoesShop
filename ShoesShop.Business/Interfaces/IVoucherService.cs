@@ -18,4 +18,7 @@ public interface IVoucherService
 
     /// <summary>UC-36: Xóa voucher (chỉ khi chưa được dùng)</summary>
     Task DeleteAsync(int voucherId);
+
+    /// <summary>UC-16: Kiểm tra mã voucher hợp lệ với subtotal + user hiện tại, trả về số tiền giảm (không ghi DB)</summary>
+    Task<VoucherPreviewResponse> ValidateForOrderAsync(string code, decimal subTotal, int userId);
 }

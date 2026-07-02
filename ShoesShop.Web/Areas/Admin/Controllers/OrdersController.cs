@@ -42,10 +42,9 @@ public class OrdersController : Controller
     }
 
     [HttpPost, ValidateAntiForgeryToken]
-    public async Task<IActionResult> UpdateStatus(int id, string newStatus, string? note,
-        string? carrierName, string? trackingNumber, DateTime? estimatedDeliveryDate)
+    public async Task<IActionResult> UpdateStatus(int id, string newStatus, string? note)
     {
-        var body = new { newStatus, note, carrierName, trackingNumber, estimatedDeliveryDate };
+        var body = new { newStatus, note };
         var (r, _) = await _api.PatchAsync<JsonElement>($"/api/staff/orders/{id}/status", body);
         TempData[r?.Success == true ? "Success" : "Error"] = r?.Success == true ? "Cập nhật trạng thái thành công!" : (r?.Message ?? "Thất bại");
         return RedirectToAction(nameof(Detail), new { id });

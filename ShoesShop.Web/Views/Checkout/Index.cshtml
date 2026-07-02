@@ -204,15 +204,29 @@
                 <!-- Items preview -->
                 <div id="checkout-items" style="max-height:260px;overflow-y:auto;margin-bottom:16px"></div>
 
+                <!-- Voucher -->
+                <div style="margin-bottom:16px;padding-top:12px;border-top:1px solid #eee">
+                    <div style="display:flex;gap:8px">
+                        <input type="text" id="voucher-code" placeholder="Nhập mã giảm giá"
+                               style="flex:1;border:1px solid #ddd;padding:9px 12px;font-size:0.8rem;text-transform:uppercase"
+                               onkeydown="if(event.key==='Enter'){event.preventDefault();applyVoucher();}">
+                        <button type="button" id="btn-apply-voucher" onclick="applyVoucher()"
+                                style="border:1px solid #000;background:#fff;color:#000;padding:0 16px;font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;cursor:pointer">
+                            Áp dụng
+                        </button>
+                    </div>
+                    <div id="voucher-msg" style="font-size:0.75rem;margin-top:6px"></div>
+                </div>
+
                 <div class="d-flex justify-content-between mb-2 pt-2" style="border-top:1px solid #eee">
                     <span style="font-size:0.82rem;color:#666">Tạm tính</span>
                     <span style="font-size:0.82rem;font-weight:700" id="co-subtotal">—</span>
                 </div>
-                <div class="d-flex justify-content-between mb-3 pb-3" style="border-bottom:1px solid #eee">
-                    <span style="font-size:0.82rem;color:#666">Phí vận chuyển</span>
-                    <span style="font-size:0.82rem;font-weight:600" id="co-ship">—</span>
+                <div class="d-flex justify-content-between mb-2 pb-3" id="co-discount-row" style="display:none;border-bottom:1px solid #eee">
+                    <span style="font-size:0.82rem;color:#666">Giảm giá</span>
+                    <span style="font-size:0.82rem;font-weight:600;color:#2d6a4f" id="co-discount">—</span>
                 </div>
-                <div class="d-flex justify-content-between mb-4">
+                <div class="d-flex justify-content-between mb-4 pt-2" style="border-top:1px solid #eee">
                     <span style="font-size:1rem;font-weight:800;text-transform:uppercase;letter-spacing:0.04em">Tổng cộng</span>
                     <span style="font-size:1.3rem;font-weight:900" id="co-total">—</span>
                 </div>
@@ -323,6 +337,19 @@ const JWT_TOKEN = '@Html.Raw(jwtToken)';
 let cart = [];
 let usingNewAddress = @(savedAddresses.Any() ? "false" : "true");
 
+// Trích thông điệp lỗi rõ ràng từ response API (hỗ trợ cả ApiResponse.message lẫn ModelState.errors)
+function extractApiError(data, fallback) {
+    if (!data) return fallback;
+    if (data.message) return data.message;
+    if (data.Message) return data.Message;
+    if (data.errors) {
+        const msgs = Object.values(data.errors).flat();
+        if (msgs.length) return msgs.join(' ');
+    }
+    if (data.title) return data.title;
+    return fallback;
+}
+
 $(document).ready(function() {
     cart = JSON.parse(localStorage.getItem('shoes_shop_cart')) || [];
     if (!cart.length) { window.location.href = '/Cart'; return; }
@@ -332,6 +359,13 @@ $(document).ready(function() {
     // Nếu có địa chỉ đã lưu, tự điền địa chỉ đang được chọn vào các hidden fields
     const defaultCard = document.querySelector('.saved-addr-card.selected');
     if (defaultCard) fillFromCard(defaultCard);
+
+    // Khôi phục + validate lại voucher đã áp từ trang Giỏ hàng (nếu có)
+    const savedVoucherCode = sessionStorage.getItem('cart_voucher_code');
+    if (savedVoucherCode) {
+        document.getElementById('voucher-code').value = savedVoucherCode;
+        applyVoucher();
+    }
 });
 
 function selectAddress(card) {
@@ -402,18 +436,73 @@ function renderItems() {
     document.getElementById('checkout-items').innerHTML = html;
 }
 
+// Voucher đã áp dụng thành công (null nếu chưa áp) — server sẽ validate lại lúc đặt hàng.
+let appliedVoucher = null;
+
+function getSubtotal() {
+    return parseFloat(sessionStorage.getItem('cart_subtotal')) ||
+           cart.reduce((s,i)=>s+(i.salePrice||0)*i.quantity, 0);
+}
+
 function renderSummary() {
-    const subtotal = parseFloat(sessionStorage.getItem('cart_subtotal')) ||
-                     cart.reduce((s,i)=>s+(i.salePrice||0)*i.quantity, 0);
-    const shipping = parseFloat(sessionStorage.getItem('cart_shipping')) ||
-                     (subtotal >= 500000 ? 0 : 30000);
-    const total    = subtotal + shipping;
+    const subtotal = getSubtotal();
+    const discount = appliedVoucher ? appliedVoucher.discountAmount : 0;
+    const total    = subtotal - discount;
 
     document.getElementById('co-subtotal').textContent = subtotal.toLocaleString('vi-VN') + '₫';
-    const shipEl = document.getElementById('co-ship');
-    shipEl.textContent = shipping === 0 ? 'Miễn phí' : shipping.toLocaleString('vi-VN') + '₫';
-    shipEl.style.color = shipping === 0 ? '#2d6a4f' : '#000';
+
+    const discountRow = document.getElementById('co-discount-row');
+    if (discount > 0) {
+        discountRow.style.display = '';
+        document.getElementById('co-discount').textContent = '-' + discount.toLocaleString('vi-VN') + '₫';
+    } else {
+        discountRow.style.display = 'none';
+    }
+
     document.getElementById('co-total').textContent = total.toLocaleString('vi-VN') + '₫';
+}
+
+async function applyVoucher() {
+    const codeInput = document.getElementById('voucher-code');
+    const msgEl      = document.getElementById('voucher-msg');
+    const code       = codeInput.value.trim();
+    if (!code) { msgEl.style.color = '#e63946'; msgEl.textContent = 'Vui lòng nhập mã voucher.'; return; }
+
+    const btn = document.getElementById('btn-apply-voucher');
+    btn.disabled = true;
+    msgEl.style.color = '#888';
+    msgEl.textContent = 'Đang kiểm tra...';
+
+    try {
+        const res = await fetch(API_BASE + '/api/vouchers/apply', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                ...(JWT_TOKEN ? { 'Authorization': 'Bearer ' + JWT_TOKEN } : {})
+            },
+            body: JSON.stringify({ Code: code, SubTotal: getSubtotal() })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data?.message || 'Mã voucher không hợp lệ.');
+
+        const d = data?.data || data?.Data || {};
+        appliedVoucher = {
+            code: d.code || d.Code || code,
+            discountAmount: d.discountAmount ?? d.DiscountAmount ?? 0
+        };
+        sessionStorage.setItem('cart_voucher_code', appliedVoucher.code);
+        msgEl.style.color = '#2d6a4f';
+        msgEl.textContent = `Đã áp dụng mã "${appliedVoucher.code}" — giảm ${appliedVoucher.discountAmount.toLocaleString('vi-VN')}₫.`;
+        renderSummary();
+    } catch (err) {
+        appliedVoucher = null;
+        sessionStorage.removeItem('cart_voucher_code');
+        msgEl.style.color = '#e63946';
+        msgEl.textContent = err.message || 'Không áp dụng được mã này.';
+        renderSummary();
+    } finally {
+        btn.disabled = false;
+    }
 }
 
 function selectPayment(label, value) {
@@ -428,7 +517,7 @@ async function placeOrder() {
     let name, phone, address, province, district, ward, note;
 
     if (!usingNewAddress) {
-        // Đọc từ card đã chọn — không cần validate lại
+        // Đọc từ card đã chọn
         const card = document.querySelector('.saved-addr-card.selected');
         if (!card) { alert('Vui lòng chọn địa chỉ giao hàng.'); return; }
         name     = card.dataset.name     || '';
@@ -438,6 +527,12 @@ async function placeOrder() {
         district = card.dataset.district || '';
         ward     = card.dataset.ward     || '';
         note     = document.getElementById('note') ? document.getElementById('note').value.trim() : '';
+
+        // Địa chỉ đã lưu có thể chứa dữ liệu cũ (vd. SĐT không đủ 10 số) — kiểm tra trước khi gửi
+        if (!/^0\d{9}$/.test(phone)) {
+            alert('Số điện thoại của địa chỉ này không hợp lệ (phải gồm 10 chữ số bắt đầu bằng 0). Vui lòng cập nhật lại địa chỉ trong trang tài khoản.');
+            return;
+        }
     } else {
         // Đọc từ form nhập tay + validate
         name     = document.getElementById('recipientName').value.trim();
@@ -463,10 +558,9 @@ async function placeOrder() {
     }
 
     const paymentMethod = document.querySelector('input[name="payment"]:checked')?.value || 'COD';
-    const subtotal = parseFloat(sessionStorage.getItem('cart_subtotal')) ||
-                     cart.reduce((s,i)=>s+(i.salePrice||0)*i.quantity, 0);
-    const shipping = parseFloat(sessionStorage.getItem('cart_shipping')) || (subtotal >= 500000 ? 0 : 30000);
-    const total    = subtotal + shipping;
+    const subtotal = getSubtotal();
+    const discount = appliedVoucher ? appliedVoucher.discountAmount : 0;
+    const total    = subtotal - discount;
 
     const btn = document.getElementById('btn-place-order');
     btn.disabled = true;
@@ -480,9 +574,11 @@ async function placeOrder() {
         District:        district || 'Chưa phân loại',
         Ward:            ward     || '',
         Note:            note,
+        PaymentMethod:   paymentMethod,
+        VoucherCode:     appliedVoucher ? appliedVoucher.code : null,
+        // Các trường số tiền dưới đây chỉ để hiển thị — server tự tính lại từ DB, không tin giá trị này.
         SubTotal:        subtotal,
-        ShippingFee:     shipping,
-        DiscountAmount:  0,
+        DiscountAmount:  discount,
         TotalAmount:     total,
         Items: cart.map(item => ({
             VariantId:   parseInt(item.variantId || 1),
@@ -505,7 +601,7 @@ async function placeOrder() {
             body: JSON.stringify(payload)
         });
         const orderData = await orderRes.json();
-        if (!orderRes.ok) throw new Error(orderData?.message || 'Đặt hàng thất bại.');
+        if (!orderRes.ok) throw new Error(extractApiError(orderData, 'Đặt hàng thất bại.'));
 
         const orderId = orderData?.data || orderData?.Data;
         localStorage.removeItem('shoes_shop_cart');
@@ -524,7 +620,7 @@ async function placeOrder() {
                 body: JSON.stringify({ orderId: orderId })
             });
             const linkData = await linkRes.json();
-            if (!linkRes.ok) throw new Error(linkData?.message || 'Không tạo được link thanh toán.');
+            if (!linkRes.ok) throw new Error(extractApiError(linkData, 'Không tạo được link thanh toán.'));
 
             const d = linkData?.data || linkData?.Data || {};
             const checkoutUrl = d.checkoutUrl || d.CheckoutUrl;

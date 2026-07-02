@@ -66,19 +66,20 @@
 						<span style="font-size:0.85rem;font-weight:700" id="summary-subtotal">0₫</span>
 					</div>
 
-					<div class="d-flex justify-content-between mb-3 pb-3" style="border-bottom:1px solid #eee">
-						<span style="font-size:0.85rem;color:#666">Phí vận chuyển</span>
-						<span style="font-size:0.85rem;font-weight:600" id="summary-ship">—</span>
-					</div>
-
 					<!-- Voucher input -->
 					<div class="mb-4">
 						<div class="d-flex gap-2">
 							<input type="text" id="voucherInput" placeholder="Mã giảm giá"
-								   class="form-control-clean" style="flex:1;font-size:0.82rem">
-							<button onclick="applyVoucher()" class="btn-black" style="padding:9px 14px;font-size:0.75rem">Áp dụng</button>
+								   class="form-control-clean" style="flex:1;font-size:0.82rem;text-transform:uppercase"
+								   onkeydown="if(event.key==='Enter'){event.preventDefault();applyVoucher();}">
+							<button onclick="applyVoucher()" id="btn-apply-voucher" class="btn-black" style="padding:9px 14px;font-size:0.75rem">Áp dụng</button>
 						</div>
 						<div id="voucher-msg" style="font-size:0.78rem;margin-top:6px;min-height:16px"></div>
+					</div>
+
+					<div class="d-flex justify-content-between mb-1" id="summary-discount-row" style="display:none">
+						<span style="font-size:0.85rem;color:#666">Giảm giá</span>
+						<span style="font-size:0.85rem;font-weight:600;color:#2d6a4f" id="summary-discount">—</span>
 					</div>
 
 					<div class="d-flex justify-content-between mb-1">
@@ -104,9 +105,11 @@
 
 @section Scripts {
 	<script>
-		const SHIPPING_THRESHOLD = 500000;
-		const SHIPPING_FEE = 30000;
+		const API_BASE = 'https://localhost:7214';
+		const JWT_TOKEN = '@Html.Raw(ViewBag.JwtToken ?? "")';
 		let cart = [];
+		// Voucher đã áp dụng thành công (null nếu chưa áp) — server sẽ validate lại lúc đặt hàng.
+		let appliedVoucher = null;
 
 		function loadCart() {
 			cart = JSON.parse(localStorage.getItem('shoes_shop_cart')) || [];
@@ -118,6 +121,13 @@
 			document.getElementById('cart-content').classList.remove('d-none');
 			renderItems();
 			updateSummary();
+
+			// Khôi phục voucher đã áp trước đó (vd. quay lại từ Checkout) và validate lại
+			const savedCode = sessionStorage.getItem('cart_voucher_code');
+			if (savedCode && JWT_TOKEN) {
+				document.getElementById('voucherInput').value = savedCode;
+				applyVoucher(true);
+			}
 		}
 
 		function renderItems() {
@@ -178,6 +188,7 @@
 			document.getElementById('qty-' + idx).textContent = cart[idx].quantity;
 			document.getElementById('sub-' + idx).textContent = (cart[idx].salePrice * cart[idx].quantity).toLocaleString('vi-VN') + '₫';
 			updateSummary();
+			revalidateVoucherIfApplied();
 		}
 
 		function removeItem(idx) {
@@ -186,10 +197,12 @@
 			if (!cart.length) {
 				document.getElementById('cart-content').classList.add('d-none');
 				document.getElementById('cart-empty').classList.remove('d-none');
+				clearAppliedVoucher();
 				return;
 			}
 			renderItems();
 			updateSummary();
+			revalidateVoucherIfApplied();
 		}
 
 		function clearCart() {
@@ -198,6 +211,7 @@
 			saveCart();
 			document.getElementById('cart-content').classList.add('d-none');
 			document.getElementById('cart-empty').classList.remove('d-none');
+			clearAppliedVoucher();
 		}
 
 		function saveCart() {
@@ -210,29 +224,89 @@
 		function updateSummary() {
 			const subtotal  = cart.reduce((s,i) => s + (i.salePrice||0) * i.quantity, 0);
 			const itemCount = cart.reduce((s,i) => s + i.quantity, 0);
-			const shipping  = subtotal >= SHIPPING_THRESHOLD ? 0 : SHIPPING_FEE;
-			const total     = subtotal + shipping;
+			const discount  = appliedVoucher ? appliedVoucher.discountAmount : 0;
+			const total     = subtotal - discount;
 
 			document.getElementById('summary-count').textContent    = itemCount;
 			document.getElementById('summary-subtotal').textContent = subtotal.toLocaleString('vi-VN') + '₫';
-			const shipEl = document.getElementById('summary-ship');
-			shipEl.textContent = shipping === 0 ? 'Miễn phí' : shipping.toLocaleString('vi-VN') + '₫';
-			shipEl.style.color = shipping === 0 ? '#2d6a4f' : '#000';
-			document.getElementById('summary-total').textContent    = total.toLocaleString('vi-VN') + '₫';
+
+			const discountRow = document.getElementById('summary-discount-row');
+			if (discount > 0) {
+				discountRow.style.display = '';
+				document.getElementById('summary-discount').textContent = '-' + discount.toLocaleString('vi-VN') + '₫';
+			} else {
+				discountRow.style.display = 'none';
+			}
+
+			document.getElementById('summary-total').textContent = total.toLocaleString('vi-VN') + '₫';
 
 			sessionStorage.setItem('cart_subtotal', subtotal);
-			sessionStorage.setItem('cart_shipping', shipping);
 			sessionStorage.setItem('cart_total',    total);
+			if (appliedVoucher) {
+				sessionStorage.setItem('cart_voucher_code', appliedVoucher.code);
+			} else {
+				sessionStorage.removeItem('cart_voucher_code');
+			}
 		}
 
-		function applyVoucher() {
-			const code = document.getElementById('voucherInput').value.trim();
-			const msg  = document.getElementById('voucher-msg');
-			if (!code) { msg.innerHTML = '<span style="color:#e63946">Vui lòng nhập mã giảm giá.</span>'; return; }
+		async function applyVoucher(silent) {
+			const codeInput = document.getElementById('voucherInput');
+			const msg        = document.getElementById('voucher-msg');
+			const code       = codeInput.value.trim();
+			if (!code) {
+				if (!silent) msg.innerHTML = '<span style="color:#e63946">Vui lòng nhập mã giảm giá.</span>';
+				return;
+			}
+
+			if (!JWT_TOKEN) {
+				msg.innerHTML = '<span style="color:#e63946">Vui lòng đăng nhập để sử dụng mã giảm giá.</span>';
+				return;
+			}
+
+			const btn = document.getElementById('btn-apply-voucher');
+			if (btn) btn.disabled = true;
 			msg.innerHTML = '<span style="color:#888">Đang kiểm tra...</span>';
-			setTimeout(() => {
-				msg.innerHTML = '<span style="color:#e63946">Mã không hợp lệ hoặc đã hết hạn.</span>';
-			}, 800);
+
+			const subtotal = cart.reduce((s,i) => s + (i.salePrice||0) * i.quantity, 0);
+
+			try {
+				const res = await fetch(API_BASE + '/api/vouchers/apply', {
+					method: 'POST',
+					headers: {
+						'Content-Type': 'application/json',
+						'Authorization': 'Bearer ' + JWT_TOKEN
+					},
+					body: JSON.stringify({ Code: code, SubTotal: subtotal })
+				});
+				const data = await res.json();
+				if (!res.ok) throw new Error(data?.message || 'Mã voucher không hợp lệ.');
+
+				const d = data?.data || data?.Data || {};
+				appliedVoucher = {
+					code: d.code || d.Code || code,
+					discountAmount: d.discountAmount ?? d.DiscountAmount ?? 0
+				};
+				msg.innerHTML = `<span style="color:#2d6a4f">Đã áp dụng mã "${appliedVoucher.code}" — giảm ${appliedVoucher.discountAmount.toLocaleString('vi-VN')}₫.</span>`;
+			} catch (err) {
+				appliedVoucher = null;
+				msg.innerHTML = `<span style="color:#e63946">${err.message || 'Mã không hợp lệ hoặc đã hết hạn.'}</span>`;
+			} finally {
+				if (btn) btn.disabled = false;
+				updateSummary();
+			}
+		}
+
+		function revalidateVoucherIfApplied() {
+			if (!appliedVoucher) return;
+			document.getElementById('voucherInput').value = appliedVoucher.code;
+			applyVoucher(true);
+		}
+
+		function clearAppliedVoucher() {
+			appliedVoucher = null;
+			sessionStorage.removeItem('cart_voucher_code');
+			const msg = document.getElementById('voucher-msg');
+			if (msg) msg.innerHTML = '';
 		}
 
 		loadCart();

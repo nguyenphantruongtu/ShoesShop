@@ -57,6 +57,10 @@
            class="sidebar-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Orders" ? "active" : "")">
             <i class="bi bi-receipt"></i><span>Đơn hàng</span>
         </a>
+        <a asp-area="Admin" asp-controller="Reviews" asp-action="Index"
+           class="sidebar-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "Reviews" ? "active" : "")">
+            <i class="bi bi-star"></i><span>Đánh giá</span>
+        </a>
 
         @if (User.IsInRole("Admin"))
         {

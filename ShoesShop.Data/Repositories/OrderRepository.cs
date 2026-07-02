@@ -57,6 +57,9 @@ public class OrderRepository : IOrderRepository
             .Include(o => o.User)
             .Include(o => o.HandledByStaff)
             .Include(o => o.OrderItems)
+                .ThenInclude(oi => oi.Variant)
+                    .ThenInclude(v => v.Product)
+                        .ThenInclude(p => p.ProductImages)
             .AsQueryable();
 
         if (!string.IsNullOrWhiteSpace(status))
@@ -70,9 +73,17 @@ public class OrderRepository : IOrderRepository
                 o.RecipientPhone.Contains(kw));
         }
 
-        var total  = await query.CountAsync();
-        var orders = await query
-            .OrderByDescending(o => o.CreatedAt)
+        var total = await query.CountAsync();
+
+        // Khi xem "Tất cả" (không lọc status): ưu tiên đơn Chờ xác nhận lên đầu để
+        // staff xử lý trước, các đơn còn lại xếp theo ngày tạo mới nhất.
+        var isViewingAll = string.IsNullOrWhiteSpace(status);
+        var orderedQuery = isViewingAll
+            ? query.OrderBy(o => o.OrderStatus == "Pending" ? 0 : 1)
+                   .ThenByDescending(o => o.CreatedAt)
+            : query.OrderByDescending(o => o.CreatedAt);
+
+        var orders = await orderedQuery
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
             .ToListAsync();
@@ -86,9 +97,11 @@ public class OrderRepository : IOrderRepository
         => await _ctx.Orders
             .Include(o => o.User)
             .Include(o => o.HandledByStaff)
+            .Include(o => o.Voucher)
             .Include(o => o.OrderItems)
                 .ThenInclude(oi => oi.Variant)
-            .Include(o => o.Shipment)
+                    .ThenInclude(v => v.Product)
+                        .ThenInclude(p => p.ProductImages)
             .Include(o => o.OrderStatusHistories.OrderBy(h => h.ChangedAt))
                 .ThenInclude(h => h.ChangedByUser)
             .FirstOrDefaultAsync(o => o.OrderId == orderId);
@@ -104,7 +117,7 @@ public class OrderRepository : IOrderRepository
         await _ctx.SaveChangesAsync();
     }
 
-    // ── Status history & Shipment ────────────────────────────────────────────
+    // ── Status history ───────────────────────────────────────────────────────
 
     public async Task AddStatusHistoryAsync(OrderStatusHistory history)
     {
@@ -112,25 +125,28 @@ public class OrderRepository : IOrderRepository
         await _ctx.SaveChangesAsync();
     }
 
-    public async Task<Shipment?> GetShipmentByOrderIdAsync(int orderId)
-        => await _ctx.Shipments.FirstOrDefaultAsync(s => s.OrderId == orderId);
+    // ── Payment (ghi nhận phương thức + đánh dấu Paid) ───────────────────────
 
-    public async Task AddShipmentAsync(Shipment shipment)
-    {
-        await _ctx.Shipments.AddAsync(shipment);
-        await _ctx.SaveChangesAsync();
-    }
+    public async Task<PaymentMethod?> GetPaymentMethodByNameAsync(string methodName)
+        => await _ctx.PaymentMethods.FirstOrDefaultAsync(m => m.MethodName == methodName && m.IsActive);
 
-    public async Task UpdateShipmentAsync(Shipment shipment)
+    public async Task<Payment?> GetPaymentByOrderIdAsync(int orderId)
+        => await _ctx.Payments.FirstOrDefaultAsync(p => p.OrderId == orderId);
+
+    public async Task UpdatePaymentAsync(Payment payment)
     {
-        _ctx.Shipments.Update(shipment);
+        _ctx.Payments.Update(payment);
         await _ctx.SaveChangesAsync();
     }
 
     // ── Variant (dùng cho cancel rollback + create stock deduct) ────────────
 
     public async Task<ProductVariant?> GetVariantByIdAsync(int variantId)
-        => await _ctx.ProductVariants.FindAsync(variantId);
+        => await _ctx.ProductVariants
+            .Include(v => v.Product)
+            .Include(v => v.Size)
+            .Include(v => v.Color)
+            .FirstOrDefaultAsync(v => v.VariantId == variantId);
 
     public async Task UpdateVariantAsync(ProductVariant variant)
     {
@@ -145,7 +161,9 @@ public class OrderRepository : IOrderRepository
     {
         var query = _ctx.Orders
             .Include(o => o.OrderItems)
-            .Include(o => o.Shipment)
+                .ThenInclude(oi => oi.Variant)
+                    .ThenInclude(v => v.Product)
+                        .ThenInclude(p => p.ProductImages)
             .Where(o => o.UserId == userId)
             .AsQueryable();
 
@@ -167,9 +185,13 @@ public class OrderRepository : IOrderRepository
     public async Task<Order?> GetByIdAndUserIdAsync(int orderId, int userId)
         => await _ctx.Orders
             .Include(o => o.User)
+            .Include(o => o.Voucher)
             .Include(o => o.OrderItems)
                 .ThenInclude(oi => oi.Variant)
-            .Include(o => o.Shipment)
+                    .ThenInclude(v => v.Product)
+                        .ThenInclude(p => p.ProductImages)
+            .Include(o => o.OrderItems)
+                .ThenInclude(oi => oi.Reviews)
             .Include(o => o.OrderStatusHistories.OrderBy(h => h.ChangedAt))
                 .ThenInclude(h => h.ChangedByUser)
             .FirstOrDefaultAsync(o => o.OrderId == orderId && o.UserId == userId);

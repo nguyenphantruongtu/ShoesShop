@@ -1,0 +1,209 @@
+@using System.Text.Json
+@model JsonElement?
+@{ ViewData["Title"] = "Đánh giá sản phẩm"; }
+
+@{
+    string curStatus = ViewBag.Status ?? "";
+    int curPage = ViewBag.Page ?? 1;
+}
+
+<div class="page-header"><h3><i class="bi bi-star me-2 text-primary"></i>Đánh giá sản phẩm</h3><p>Kiểm duyệt đánh giá của khách hàng trước khi hiển thị công khai</p></div>
+
+@* Status pills *@
+<div class="d-flex gap-2 flex-wrap mb-3">
+    <a asp-action="Index" class="btn btn-sm rounded-pill @(string.IsNullOrEmpty(curStatus) ? "btn-primary" : "btn-outline-secondary")">Tất cả</a>
+    <a asp-action="Index" asp-route-status="pending" class="btn btn-sm rounded-pill @(curStatus=="pending" ? "btn-primary" : "btn-outline-secondary")">Chờ duyệt</a>
+    <a asp-action="Index" asp-route-status="approved" class="btn btn-sm rounded-pill @(curStatus=="approved" ? "btn-primary" : "btn-outline-secondary")">Đã duyệt</a>
+</div>
+
+@if (Model is JsonElement data && data.ValueKind != JsonValueKind.Undefined)
+{
+    var reviews = data.GetProperty("reviews");
+    var total   = data.GetProperty("totalCount").GetInt32();
+    var reviewList = reviews.ValueKind == JsonValueKind.Array ? reviews.EnumerateArray().ToList() : new List<JsonElement>();
+
+    // Nhóm theo sản phẩm — giữ thứ tự xuất hiện đầu tiên (đã sắp xếp mới nhất trước ở API)
+    // để sản phẩm có đánh giá mới nhất hiện lên đầu gallery, giúp nhân viên duyệt việc mới trước.
+    var productGroups = reviewList
+        .GroupBy(r => r.GetProperty("productId").GetInt32())
+        .Select(g => new
+        {
+            ProductId   = g.Key,
+            ProductName = g.First().GetProperty("productName").GetString(),
+            ImageUrl    = g.First().TryGetProperty("productImageUrl", out var pi) && pi.ValueKind != JsonValueKind.Null ? pi.GetString() : null,
+            Total       = g.Count(),
+            Pending     = g.Count(r => !r.GetProperty("isApproved").GetBoolean())
+        })
+        .ToList();
+
+    <div class="card border-0 shadow-sm rounded-4 mb-4">
+      <div class="card-body p-4">
+        <h6 class="fw-bold mb-3 text-muted small text-uppercase">Sản phẩm có đánh giá (@productGroups.Count) — bấm để lọc bên dưới</h6>
+        @if (productGroups.Count == 0)
+        {
+            <div class="text-center text-muted py-4">
+                <i class="bi bi-chat-square" style="font-size:2rem"></i>
+                <p class="mt-2 small mb-0">Không có đánh giá nào.</p>
+            </div>
+        }
+        else
+        {
+            <div class="d-flex flex-wrap gap-3" id="productGallery">
+                <div class="review-product-card active" data-product-id="all" onclick="filterByProduct('all', this)">
+                    <div class="review-product-thumb d-flex align-items-center justify-content-center bg-light">
+                        <i class="bi bi-grid-3x3-gap text-muted"></i>
+                    </div>
+                    <div class="review-product-name">Tất cả</div>
+                    <span class="badge bg-secondary rounded-pill">@total</span>
+                </div>
+                @foreach (var p in productGroups)
+                {
+                    <div class="review-product-card" data-product-id="@p.ProductId" onclick="filterByProduct('@p.ProductId', this)">
+                        <img src="@(p.ImageUrl ?? "https://placehold.co/64x64/f3f3f3/888?text=?")"
+                             class="review-product-thumb" onerror="this.src='https://placehold.co/64x64/f3f3f3/888?text=?'">
+                        <div class="review-product-name" title="@p.ProductName">@p.ProductName</div>
+                        @if (p.Pending > 0)
+                        {
+                            <span class="badge bg-warning text-dark rounded-pill">@p.Pending chờ duyệt</span>
+                        }
+                        else
+                        {
+                            <span class="badge bg-secondary rounded-pill">@p.Total</span>
+                        }
+                    </div>
+                }
+            </div>
+        }
+      </div>
+    </div>
+
+    <div class="card border-0 shadow-sm rounded-4" id="reviewListSection">
+      <div class="card-body p-0">
+        <div class="px-4 py-3 border-bottom d-flex align-items-center justify-content-between">
+            <span class="text-muted small">Đang xem: <strong id="filterLabel">Tất cả (@total)</strong></span>
+            <span class="text-muted small"><i class="bi bi-sort-down me-1"></i>Mới nhất trước</span>
+        </div>
+        <table class="table admin-table mb-0">
+          <thead><tr>
+            <th class="ps-4">Sản phẩm</th><th>Khách hàng</th><th>Đánh giá</th><th>Nhận xét</th><th>Nguồn</th><th>Trạng thái</th><th>Ngày gửi</th><th class="text-end pe-4">Thao tác</th>
+          </tr></thead>
+          <tbody id="reviewTbody">
+          @foreach (var rv in reviewList)
+              {
+                  var rid      = rv.GetProperty("reviewId").GetInt32();
+                  var pid      = rv.GetProperty("productId").GetInt32();
+                  var pname    = rv.GetProperty("productName").GetString();
+                  var uname    = rv.GetProperty("userName").GetString();
+                  var rating   = rv.GetProperty("rating").GetInt32();
+                  var comment  = rv.TryGetProperty("comment", out var c) && c.ValueKind != JsonValueKind.Null ? c.GetString() : null;
+                  var approved = rv.GetProperty("isApproved").GetBoolean();
+                  var verified = rv.GetProperty("isVerifiedPurchase").GetBoolean();
+                  var date     = rv.GetProperty("createdAt").GetDateTime();
+                  <tr data-product-id="@pid">
+                    <td class="ps-4 fw-medium small">@pname</td>
+                    <td class="small">@uname</td>
+                    <td class="small">
+                        @for (int s = 1; s <= 5; s++)
+                        {
+                            <i class="bi @(s <= rating ? "bi-star-fill" : "bi-star") text-warning"></i>
+                        }
+                    </td>
+                    <td class="small text-muted" style="max-width:260px;white-space:normal">@(string.IsNullOrEmpty(comment) ? "—" : comment)</td>
+                    <td>
+                        @if (verified)
+                        { <span class="badge bg-info-subtle text-info-emphasis rounded-pill px-3 small">Đã mua hàng</span> }
+                        else
+                        { <span class="badge bg-secondary-subtle text-secondary-emphasis rounded-pill px-3 small">Demo</span> }
+                    </td>
+                    <td>
+                        @if (approved)
+                        { <span class="badge bg-success rounded-pill px-3 small">Đã duyệt</span> }
+                        else
+                        { <span class="badge bg-warning text-dark rounded-pill px-3 small">Chờ duyệt</span> }
+                    </td>
+                    <td class="text-muted small">@date.ToString("dd/MM/yy HH:mm")</td>
+                    <td class="text-end pe-4">
+                        <div class="d-inline-flex gap-1">
+                            @if (!approved)
+                            {
+                                <form asp-action="Approve" asp-route-id="@rid" asp-route-status="@curStatus" asp-route-page="@curPage" method="post" class="d-inline">
+                                    @Html.AntiForgeryToken()
+                                    <button type="submit" class="btn btn-sm btn-outline-success rounded-3" title="Duyệt — hiển thị công khai"><i class="bi bi-check-lg"></i></button>
+                                </form>
+                            }
+                            else
+                            {
+                                <form asp-action="Reject" asp-route-id="@rid" asp-route-status="@curStatus" asp-route-page="@curPage" method="post" class="d-inline">
+                                    @Html.AntiForgeryToken()
+                                    <button type="submit" class="btn btn-sm btn-outline-warning rounded-3" title="Ẩn khỏi trang công khai"><i class="bi bi-eye-slash"></i></button>
+                                </form>
+                            }
+                            <form asp-action="Delete" asp-route-id="@rid" asp-route-status="@curStatus" asp-route-page="@curPage" method="post" class="d-inline" onsubmit="return confirm('Xóa đánh giá này?')">
+                                @Html.AntiForgeryToken()
+                                <button type="submit" class="btn btn-sm btn-outline-danger rounded-3" title="Xóa"><i class="bi bi-trash"></i></button>
+                            </form>
+                        </div>
+                    </td>
+                  </tr>
+              }
+          </tbody>
+        </table>
+        <div class="text-center text-muted py-5 d-none" id="reviewEmptyState">
+            <i class="bi bi-chat-square" style="font-size:2rem"></i>
+            <p class="mt-2 small mb-0">Không có đánh giá nào cho sản phẩm này.</p>
+        </div>
+      </div>
+    </div>
+}
+
+@section Scripts {
+<style>
+.review-product-card {
+    width: 108px;
+    cursor: pointer;
+    text-align: center;
+    padding: 8px;
+    border: 2px solid transparent;
+    border-radius: 12px;
+    transition: border-color 0.15s, background 0.15s;
+}
+.review-product-card:hover { background: #f8f9fa; }
+.review-product-card.active { border-color: var(--bs-primary, #0d6efd); background: #f0f6ff; }
+.review-product-thumb {
+    width: 64px;
+    height: 64px;
+    object-fit: cover;
+    border-radius: 8px;
+    margin: 0 auto 6px;
+}
+.review-product-name {
+    font-size: 0.72rem;
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-bottom: 4px;
+}
+</style>
+<script>
+function filterByProduct(productId, cardEl) {
+    document.querySelectorAll('#productGallery .review-product-card').forEach(c => c.classList.remove('active'));
+    cardEl.classList.add('active');
+
+    const rows = document.querySelectorAll('#reviewTbody tr');
+    let visibleCount = 0;
+    rows.forEach(row => {
+        const match = productId === 'all' || row.dataset.productId === productId;
+        row.style.display = match ? '' : 'none';
+        if (match) visibleCount++;
+    });
+
+    document.getElementById('reviewEmptyState').classList.toggle('d-none', visibleCount > 0);
+    document.getElementById('filterLabel').textContent = productId === 'all'
+        ? `Tất cả (${rows.length})`
+        : `${cardEl.querySelector('.review-product-name').textContent} (${visibleCount})`;
+
+    document.getElementById('reviewListSection').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+</script>
+}

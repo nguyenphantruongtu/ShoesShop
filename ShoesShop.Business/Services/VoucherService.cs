@@ -1,3 +1,4 @@
+using ShoesShop.Business.Helpers;
 using ShoesShop.Business.Interfaces;
 using ShoesShop.Data.Entities;
 using ShoesShop.Data.Repositories.Interfaces;
@@ -68,6 +69,9 @@ public class VoucherService : IVoucherService
         if (request.EndDate <= request.StartDate)
             throw new ArgumentException("Ngày kết thúc phải sau ngày bắt đầu.");
 
+        if (voucher.DiscountType == "Percentage" && request.DiscountValue > 100)
+            throw new ArgumentException("Giảm giá theo phần trăm không được vượt quá 100%.");
+
         voucher.Description       = request.Description;
         voucher.DiscountValue     = request.DiscountValue;
         voucher.MinOrderAmount    = request.MinOrderAmount;
@@ -91,6 +95,24 @@ public class VoucherService : IVoucherService
             throw new InvalidOperationException("Không thể xóa voucher đã được sử dụng.");
 
         await _repo.DeleteAsync(voucher);
+    }
+
+    public async Task<VoucherPreviewResponse> ValidateForOrderAsync(string code, decimal subTotal, int userId)
+    {
+        var voucher = await _repo.GetByCodeAsync(code.Trim())
+            ?? throw new KeyNotFoundException($"Mã voucher '{code}' không tồn tại.");
+
+        var userUsage = await _repo.CountUserUsageAsync(userId, voucher.VoucherId);
+        var discount  = VoucherValidator.Validate(voucher, subTotal, userUsage);
+
+        return new VoucherPreviewResponse
+        {
+            VoucherId      = voucher.VoucherId,
+            Code           = voucher.Code,
+            DiscountType   = voucher.DiscountType,
+            DiscountValue  = voucher.DiscountValue,
+            DiscountAmount = discount
+        };
     }
 
     private static VoucherResponse MapToResponse(Voucher v) => new()

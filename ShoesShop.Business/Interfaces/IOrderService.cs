@@ -16,8 +16,8 @@ public interface IOrderService
     /// <summary>UC-32: Xác nhận đơn (Pending → Confirmed)</summary>
     Task<OrderDetailResponse> ConfirmOrderAsync(int orderId, int staffId);
 
-    /// <summary>UC-33 + UC-34: Cập nhật trạng thái (Confirmed→Preparing→Shipping→Delivered).
-    /// Khi NewStatus = "Shipping" bắt buộc phải có CarrierName + TrackingNumber</summary>
+    /// <summary>UC-33: Cập nhật trạng thái (Confirmed→Preparing→Shipping→Delivered).
+    /// Khi chuyển sang "Delivered": đơn COD tự động được đánh dấu đã thanh toán.</summary>
     Task<OrderDetailResponse> UpdateStatusAsync(int orderId, UpdateOrderStatusRequest request, int staffId);
 
     /// <summary>UC-35: Hủy đơn (với lý do) + rollback stock về variant</summary>

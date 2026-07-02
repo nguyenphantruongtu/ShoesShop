@@ -11,8 +11,7 @@ namespace ShoesShop.API.Controllers;
 /// UC-31: GET  /api/staff/orders              — Danh sách đơn hàng (filter status, search)
 /// UC-32: GET  /api/staff/orders/{id}         — Chi tiết đơn + xác nhận
 ///        PATCH /api/staff/orders/{id}/confirm — Pending → Confirmed
-/// UC-33: PATCH /api/staff/orders/{id}/status  — Cập nhật trạng thái
-/// UC-34: (trong UC-33, NewStatus="Shipping" + CarrierName + TrackingNumber)
+/// UC-33: PATCH /api/staff/orders/{id}/status  — Cập nhật trạng thái (Delivered ⇒ COD tự Paid)
 /// UC-35: PATCH /api/staff/orders/{id}/cancel  — Hủy đơn + rollback stock
 /// </summary>
 [ApiController]
@@ -84,7 +83,7 @@ public class StaffOrderController : ControllerBase
     /// <summary>
     /// Cập nhật trạng thái đơn hàng.
     /// Luồng hợp lệ: Confirmed→Preparing → Shipping → Delivered
-    /// Khi NewStatus = "Shipping": BẮT BUỘC CarrierName + TrackingNumber (UC-34)
+    /// Khi NewStatus = "Delivered": đơn COD tự động được đánh dấu đã thanh toán (PaymentStatus = Paid).
     /// </summary>
     [HttpPatch("{orderId:int}/status")]
     public async Task<IActionResult> UpdateStatus(int orderId, [FromBody] UpdateOrderStatusRequest request)
